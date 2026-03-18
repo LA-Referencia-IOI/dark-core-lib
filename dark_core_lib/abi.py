@@ -1,0 +1,22 @@
+"""Embedded default ABIs for dARK contracts."""
+
+AUTHORITY_ABI = [
+    {"inputs": [], "stateMutability": "nonpayable", "type": "constructor"},
+    {"inputs": [{"internalType": "string", "name": "naan", "type": "string"}], "name": "authorize_naan", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"internalType": "string", "name": "uuid", "type": "string"}], "name": "deactivate_authority", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"internalType": "string", "name": "uuid", "type": "string"}], "name": "get_authority", "outputs": [{"internalType": "address", "name": "wallet", "type": "address"}, {"internalType": "string[]", "name": "naans", "type": "string[]"}, {"internalType": "bool", "name": "active", "type": "bool"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"internalType": "string", "name": "uuid", "type": "string"}], "name": "get_authority_key", "outputs": [{"internalType": "string", "name": "encrypted_private_key", "type": "string"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"internalType": "address", "name": "wallet", "type": "address"}], "name": "get_uuid_by_wallet", "outputs": [{"internalType": "string", "name": "uuid", "type": "string"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"internalType": "address", "name": "wallet", "type": "address"}], "name": "is_active_authority", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"internalType": "address", "name": "wallet", "type": "address"}, {"internalType": "string", "name": "naan", "type": "string"}], "name": "is_authorized", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"internalType": "string", "name": "uuid", "type": "string"}, {"internalType": "address", "name": "wallet", "type": "address"}, {"internalType": "string", "name": "encrypted_private_key", "type": "string"}], "name": "register_authority", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+]
+
+DARK_ABI = [
+    {"inputs": [{"internalType": "address", "name": "authority_address", "type": "address"}], "stateMutability": "nonpayable", "type": "constructor"},
+    {"inputs": [{"internalType": "string", "name": "naan", "type": "string"}, {"internalType": "string", "name": "name", "type": "string"}], "name": "ark_exists", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"internalType": "string", "name": "naan", "type": "string"}, {"internalType": "string", "name": "name", "type": "string"}, {"internalType": "string", "name": "url", "type": "string"}, {"internalType": "string", "name": "cid", "type": "string"}], "name": "create_ark", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"internalType": "string", "name": "naan", "type": "string"}, {"internalType": "string", "name": "name", "type": "string"}], "name": "get_ark", "outputs": [{"components": [{"internalType": "string", "name": "name", "type": "string"}, {"internalType": "string", "name": "naan", "type": "string"}, {"internalType": "string", "name": "url", "type": "string"}, {"internalType": "string", "name": "cid", "type": "string"}, {"internalType": "address", "name": "owner", "type": "address"}, {"internalType": "uint256", "name": "created_at", "type": "uint256"}, {"internalType": "uint256", "name": "updated_at", "type": "uint256"}], "internalType": "struct dARK.ARK", "name": "ark", "type": "tuple"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"internalType": "string", "name": "naan", "type": "string"}, {"internalType": "string", "name": "name", "type": "string"}], "name": "resolve", "outputs": [{"internalType": "string", "name": "url", "type": "string"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"internalType": "string", "name": "naan", "type": "string"}, {"internalType": "string", "name": "name", "type": "string"}, {"internalType": "string", "name": "url", "type": "string"}, {"internalType": "string", "name": "cid", "type": "string"}], "name": "update_ark", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+]
