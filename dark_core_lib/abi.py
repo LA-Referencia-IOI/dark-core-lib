@@ -10,6 +10,7 @@ AUTHORITY_ABI = [
     {"inputs": [{"internalType": "address", "name": "wallet", "type": "address"}], "name": "is_active_authority", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "view", "type": "function"},
     {"inputs": [{"internalType": "address", "name": "wallet", "type": "address"}, {"internalType": "string", "name": "naan", "type": "string"}], "name": "is_authorized", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "view", "type": "function"},
     {"inputs": [{"internalType": "string", "name": "uuid", "type": "string"}, {"internalType": "address", "name": "wallet", "type": "address"}, {"internalType": "string", "name": "encrypted_private_key", "type": "string"}], "name": "register_authority", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"internalType": "string", "name": "naan", "type": "string"}], "name": "revoke_naan", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
 ]
 
 DARK_ABI = [

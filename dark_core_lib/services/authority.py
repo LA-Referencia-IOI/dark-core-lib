@@ -99,6 +99,27 @@ class AuthorityService:
         wallet_address, private_key = self.get_signing_credentials(uuid)
         return self._authorize_naan_with_key(wallet_address, private_key, naan)
 
+    def revoke_naan(self, uuid: str, naan: str) -> TxReceiptInfo:
+        """Revoke one NAAN for a registered authority."""
+        self._ensure_write_mode()
+        wallet_address, private_key = self.get_signing_credentials(uuid)
+        return self._revoke_naan_with_key(wallet_address, private_key, naan)
+
+    def deactivate(self, uuid: str) -> TxReceiptInfo:
+        """Deactivate an authority by UUID."""
+        self._ensure_write_mode()
+        authority = self.get(uuid)
+        if not authority.active:
+            return TxReceiptInfo(tx_hash="", status=1, gas_used=None, block_number=None)
+
+        return send_contract_tx(
+            self.w3,
+            self.contract.functions.deactivate_authority(uuid),
+            self.admin_account,
+            gas_limit=self.config.default_gas_limit,
+            timeout_seconds=self.config.tx_timeout_seconds,
+        )
+
     def authorize_naans(self, uuid: str, naans: list[str]) -> list[TxReceiptInfo]:
         """Authorize multiple NAANs for an authority."""
         self._ensure_write_mode()
@@ -119,6 +140,22 @@ class AuthorityService:
         return send_contract_tx(
             self.w3,
             self.contract.functions.authorize_naan(naan),
+            account,
+            gas_limit=self.config.default_gas_limit,
+            timeout_seconds=self.config.tx_timeout_seconds,
+        )
+
+    def _revoke_naan_with_key(self, wallet_address: str, private_key: str, naan: str) -> TxReceiptInfo:
+        if not self.contract.functions.is_authorized(wallet_address, naan).call():
+            return TxReceiptInfo(tx_hash="", status=1, gas_used=None, block_number=None)
+
+        if not self.contract.functions.is_active_authority(wallet_address).call():
+            raise AuthorizationError(f"Wallet {wallet_address} is not an active authority")
+
+        account = self.w3.eth.account.from_key(private_key)
+        return send_contract_tx(
+            self.w3,
+            self.contract.functions.revoke_naan(naan),
             account,
             gas_limit=self.config.default_gas_limit,
             timeout_seconds=self.config.tx_timeout_seconds,

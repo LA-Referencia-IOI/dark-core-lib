@@ -92,6 +92,12 @@ class DARKCoreClient:
     def authorize_naan(self, uuid: str, naan: str):
         return self._require_authorities().authorize_naan(uuid, naan)
 
+    def revoke_naan(self, uuid: str, naan: str):
+        return self._require_authorities().revoke_naan(uuid, naan)
+
+    def deactivate_authority(self, uuid: str):
+        return self._require_authorities().deactivate(uuid)
+
     def fund_authority_wallet(self, uuid: str, amount_wei: int):
         return self._require_authorities().fund_wallet(uuid, amount_wei)
 
