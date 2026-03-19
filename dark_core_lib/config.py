@@ -40,9 +40,9 @@ class CoreConfig:
     ) -> "CoreConfig":
         """Build CoreConfig from environment variables."""
         if env_path:
-            load_dotenv(env_path)
+            load_dotenv(env_path, override=True)
         else:
-            load_dotenv()
+            load_dotenv(override=True)
 
         env_read_only = _parse_bool(os.getenv("DARK_READ_ONLY"), True)
         resolved_read_only = env_read_only if read_only is None else read_only
