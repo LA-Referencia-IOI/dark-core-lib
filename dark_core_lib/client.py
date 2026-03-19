@@ -89,6 +89,12 @@ class DARKCoreClient:
     def is_authorized_for_naan(self, uuid: str, naan: str):
         return self._require_authorities().is_authorized_for_naan(uuid, naan)
 
+    def authorize_naan(self, uuid: str, naan: str):
+        return self._require_authorities().authorize_naan(uuid, naan)
+
+    def fund_authority_wallet(self, uuid: str, amount_wei: int):
+        return self._require_authorities().fund_wallet(uuid, amount_wei)
+
     def create_ark(self, uuid: str, naan: str, name: str, url: str, cid: str):
         return self.arks.create(uuid, naan, name, url, cid)
 

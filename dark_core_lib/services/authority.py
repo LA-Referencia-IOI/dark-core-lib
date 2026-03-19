@@ -176,3 +176,15 @@ class AuthorityService:
             return float(self.w3.from_wei(balance_wei, "ether"))
         except AuthorityNotFoundError:
             return None
+
+    def fund_wallet(self, uuid: str, amount_wei: int) -> TxReceiptInfo:
+        """Send ETH from the admin account to an authority wallet."""
+        self._ensure_write_mode()
+        authority = self.get(uuid)
+        return send_native_transfer(
+            self.w3,
+            sender_account=self.admin_account,
+            to_address=authority.wallet_address,
+            amount_wei=amount_wei,
+            timeout_seconds=self.config.tx_timeout_seconds,
+        )
