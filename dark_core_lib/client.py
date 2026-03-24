@@ -4,6 +4,7 @@ from typing import Optional
 
 from web3 import Web3
 
+from dark_core_lib.ark_id import parse_ark_id
 from dark_core_lib.config import CoreConfig
 from dark_core_lib.exceptions import ConfigurationError, ConnectionError
 from dark_core_lib.services import AuthorityService, ARKService, ChainService
@@ -110,11 +111,23 @@ class DARKCoreClient:
     def resolve_ark(self, naan: str, name: str):
         return self.arks.resolve(naan, name)
 
+    def resolve_ark_by_id(self, ark: str):
+        parsed = parse_ark_id(ark)
+        return self.resolve_ark(parsed.naan, parsed.name)
+
     def ark_exists(self, naan: str, name: str):
         return self.arks.exists(naan, name)
 
+    def ark_exists_by_id(self, ark: str):
+        parsed = parse_ark_id(ark)
+        return self.ark_exists(parsed.naan, parsed.name)
+
     def get_ark(self, naan: str, name: str):
         return self.arks.get(naan, name)
+
+    def get_ark_by_id(self, ark: str):
+        parsed = parse_ark_id(ark)
+        return self.get_ark(parsed.naan, parsed.name)
 
     def get_admin_balance(self):
         return self.chain.get_admin_balance()

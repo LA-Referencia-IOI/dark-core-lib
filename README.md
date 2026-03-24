@@ -4,8 +4,9 @@ SDK Python unificado para interactuar con dARK 2.0 en blockchain.
 
 Este paquete concentra en una sola API:
 
-- Operaciones de lectura: resolver ARKs, consultar existencia, obtener metadatos
+- Operaciones de lectura: resolver ARKs, consultar existencia y recuperar estado on-chain
 - Operaciones de escritura/administración: alta de autoridades, autorización de NAANs, creación y actualización de ARKs
+- Modelos y utilidades compartidas de metadata: esquemas L1/L2, backends de storage y `MetadataService`
 
 ## Resumen
 
@@ -22,7 +23,8 @@ Soporta dos modos de operación:
 DARKCoreClient
 ├── Chain service       (conectividad y estado de red)
 ├── ARK service         (resolve, exists, get, create, update)
-└── Authority service   (setup, autorización NAAN, consulta de autoridades)
+├── Authority service   (setup, autorización NAAN, consulta de autoridades)
+└── Metadata helpers    (schemas, storage, MetadataService)
 
 Contratos on-chain:
 - Contrato de autoridades (registro, NAANs, claves cifradas)
@@ -102,6 +104,24 @@ if exists:
     print(url, info.cid)
 ```
 
+### Metadata compartida
+
+```python
+from dark_core_lib import MetadataService, get_metadata_storage
+
+storage = get_metadata_storage(
+    storage_type="filesystem",
+    storage_path="./metadata_storage",
+)
+metadata = MetadataService(storage)
+
+level1 = metadata.load_level1("internal-level1-cid")
+level2 = metadata.load_level2(level1)
+
+print(level1.title)
+print(level2.content_type)
+```
+
 ### Modo escritura
 
 ```python
@@ -162,8 +182,11 @@ Vía wrappers del cliente:
 - `create_ark(uuid, naan, name, url, cid)`
 - `update_ark(uuid, naan, name, url, cid)`
 - `resolve_ark(naan, name)`
+- `resolve_ark_by_id(ark)`
 - `get_ark(naan, name)`
+- `get_ark_by_id(ark)`
 - `ark_exists(naan, name)`
+- `ark_exists_by_id(ark)`
 
 Vía servicios:
 
@@ -173,6 +196,17 @@ Vía servicios:
 - `client.arks.get(...)`
 - `client.arks.exists(...)`
 
+### Metadata compartida
+
+- `parse_ark_id(raw)`
+- `MetadataService(storage)`
+- `get_metadata_storage(storage_type="filesystem" | "store_api", **kwargs)`
+- `FileSystemMetadataStorage`
+- `StoreApiMetadataStorage`
+- `Level1Metadata`
+- `OriginalMetadataRef`
+- `StoredDocument`
+
 ## Modelos
 
 - `AuthorityInfo`
@@ -181,6 +215,10 @@ Vía servicios:
   - `naan`, `name`, `url`, `cid`, `owner`, `created_at`, `updated_at`, `ark_id`
 - `TxReceiptInfo`
   - `tx_hash`, `status`, `gas_used`, `block_number`
+- `Level1Metadata`
+  - payload público mínimo que publica el minter y consume el resolver en `?info`
+- `StoredDocument`
+  - `content`, `content_type`, `schema`
 
 ## Manejo de errores
 
@@ -232,12 +270,17 @@ python3 -m pytest -q -m integration tests/integration/test_e2e.py
 ```text
 dark-core-lib/
 ├── dark_core_lib/
+│   ├── ark_id.py
 │   ├── client.py
 │   ├── config.py
 │   ├── crypto.py
 │   ├── models.py
 │   ├── exceptions.py
 │   ├── abi.py
+│   ├── metadata/
+│   │   ├── schemas.py
+│   │   ├── service.py
+│   │   └── storage/
 │   └── services/
 │       ├── authority.py
 │       ├── ark.py

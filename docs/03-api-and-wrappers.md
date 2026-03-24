@@ -48,8 +48,11 @@ Wrappers:
 - `create_ark(uuid, naan, name, url, cid)`
 - `update_ark(uuid, naan, name, url, cid)`
 - `resolve_ark(naan, name)`
+- `resolve_ark_by_id(ark)`
 - `get_ark(naan, name)`
+- `get_ark_by_id(ark)`
 - `ark_exists(naan, name)`
+- `ark_exists_by_id(ark)`
 
 Servicios equivalentes:
 
@@ -58,6 +61,24 @@ Servicios equivalentes:
 - `client.arks.resolve(...)`
 - `client.arks.get(...)`
 - `client.arks.exists(...)`
+
+## Metadata compartida
+
+No todo en `dark-core-lib` son wrappers de blockchain. El paquete también expone piezas compartidas para los servicios HTTP:
+
+- `parse_ark_id(raw)`
+- `MetadataService(storage)`
+- `get_metadata_storage(...)`
+- `FileSystemMetadataStorage`
+- `StoreApiMetadataStorage`
+- `Level1Metadata`
+- `OriginalMetadataRef`
+- `StoredDocument`
+
+Uso típico:
+
+- el minter usa `MetadataService` para persistir L2, inyectar el CID interno en L1 y almacenar el L1 final
+- el resolver usa `MetadataService` para cargar L1 desde el CID on-chain y luego recuperar L2 para `?metadata`
 
 ## Excepciones de uso frecuente
 

@@ -6,7 +6,8 @@
 DARKCoreClient
 ├── ChainService
 ├── ARKService
-└── AuthorityService
+├── AuthorityService
+└── MetadataService / storage helpers
 
 Contratos:
 - Authority: registro de autoridad, NAANs, clave cifrada
@@ -40,6 +41,17 @@ Contratos:
 - Escritura:
   - `create`: valida no existencia, firma con credenciales de autoridad
   - `update`: valida existencia, firma con credenciales de autoridad
+
+## Metadata compartida
+
+- `dark_core_lib.metadata.schemas`
+  - define `Level1Metadata` y referencias a Level-2.
+- `dark_core_lib.metadata.storage`
+  - abstrae `filesystem` y `store_api`.
+- `dark_core_lib.metadata.service.MetadataService`
+  - encapsula el flujo compartido `L2 -> inject cid -> L1` y la carga `L1 -> L2`.
+
+Esta capa no publica nada por HTTP; la usan `dark-core-minter-api` y `dark-core-resolver-api` para mantener el mismo contrato de metadata.
 
 ## Decisiones relevantes
 
