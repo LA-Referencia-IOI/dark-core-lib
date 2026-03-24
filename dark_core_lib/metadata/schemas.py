@@ -11,6 +11,7 @@ class MetadataSchemaType(str, Enum):
     """Supported original-metadata schema types."""
 
     DUBLIN_CORE = "dublin_core"
+    OAI_DC = "oai_dc"
     DATACITE = "datacite"
     OPENAIRE4 = "openaire4"
     JATS = "jats"
@@ -30,6 +31,7 @@ class OriginalMetadataRef(BaseModel):
     """Reference to the original Level-2 metadata."""
 
     schema_: str = Field(..., alias="schema", description="Original metadata schema")
+    media_type: str = Field(..., description="Original metadata MIME type")
     cid: Optional[str] = Field(None, description="Internal CID for the original metadata")
 
     model_config = {"populate_by_name": True}

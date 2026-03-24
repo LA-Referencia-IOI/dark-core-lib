@@ -26,8 +26,9 @@ FORMAT_EXTENSIONS = {
 class FileSystemMetadataStorage(MetadataStorage):
     """Content-addressed metadata storage on a shared filesystem."""
 
-    def __init__(self, storage_path: str):
+    def __init__(self, storage_path: str, read_only: bool = False):
         self.storage_path = Path(storage_path)
+        self.read_only = read_only
         self._ensure_storage_directory()
 
     def _ensure_storage_directory(self) -> None:
@@ -118,6 +119,8 @@ class FileSystemMetadataStorage(MetadataStorage):
         try:
             if not self.storage_path.exists():
                 return False
+            if self.read_only:
+                return self.storage_path.is_dir()
             test_file = self.storage_path / ".health_check"
             test_file.touch()
             test_file.unlink()

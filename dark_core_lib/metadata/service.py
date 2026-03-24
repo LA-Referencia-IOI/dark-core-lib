@@ -25,7 +25,12 @@ class MetadataService:
         level2_cid = level1.original_metadata.cid
         if not level2_cid:
             raise ValueError("Level-1 metadata does not contain an original metadata CID")
-        return self.storage.get_document(level2_cid)
+        document = self.storage.get_document(level2_cid)
+        return StoredDocument(
+            content=document.content,
+            content_type=level1.original_metadata.media_type,
+            schema=level1.original_metadata.schema_,
+        )
 
     def store_level2(self, content: bytes, content_type: str, schema: Optional[str] = None) -> str:
         """Persist the original Level-2 document and return its CID."""
@@ -69,6 +74,4 @@ class MetadataService:
     @staticmethod
     def _decode_level1_document(document: StoredDocument) -> Level1Metadata:
         """Decode and validate a Level-1 JSON document."""
-        if "json" not in document.content_type:
-            raise ValueError("Level-1 metadata must be stored as JSON")
         return Level1Metadata.model_validate_json(document.content)

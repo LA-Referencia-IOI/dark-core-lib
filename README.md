@@ -200,7 +200,7 @@ Vía servicios:
 
 - `parse_ark_id(raw)`
 - `MetadataService(storage)`
-- `get_metadata_storage(storage_type="filesystem" | "store_api", **kwargs)`
+- `get_metadata_storage(storage_type="store_api" | "filesystem", **kwargs)`
 - `FileSystemMetadataStorage`
 - `StoreApiMetadataStorage`
 - `Level1Metadata`
@@ -217,6 +217,8 @@ Vía servicios:
   - `tx_hash`, `status`, `gas_used`, `block_number`
 - `Level1Metadata`
   - payload público mínimo que publica el minter y consume el resolver en `?info`
+- `OriginalMetadataRef`
+  - referencia interna a L2 con `schema`, `media_type` y `cid`
 - `StoredDocument`
   - `content`, `content_type`, `schema`
 

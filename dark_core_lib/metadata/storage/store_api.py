@@ -46,8 +46,6 @@ class StoreApiMetadataStorage(MetadataStorage):
     ) -> str:
         url = f"{self.base_url}/v1/store"
         headers = {"Content-Type": content_type}
-        if schema:
-            headers["X-Metadata-Schema"] = schema
 
         try:
             response = httpx.post(
@@ -88,7 +86,9 @@ class StoreApiMetadataStorage(MetadataStorage):
 
         content_type = response.headers.get("content-type", "application/octet-stream")
         content_type = content_type.split(";", 1)[0].strip()
-        return StoredDocument(content=response.content, content_type=content_type)
+        schema_header = response.headers.get("x-metadata-schema")
+        schema = schema_header.strip() if isinstance(schema_header, str) and schema_header.strip() else None
+        return StoredDocument(content=response.content, content_type=content_type, schema=schema)
 
     def health_check(self) -> bool:
         url = f"{self.base_url}/health"
