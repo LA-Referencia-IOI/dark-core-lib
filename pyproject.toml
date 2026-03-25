@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Unified Python SDK for dARK 2.0 read and write operations"
 readme = "README.md"
 license = "AGPL-3.0-only"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     {name = "LA Referencia"}
 ]
@@ -17,7 +17,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
