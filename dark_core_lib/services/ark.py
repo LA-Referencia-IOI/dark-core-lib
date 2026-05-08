@@ -104,7 +104,7 @@ class ARKService:
     def get_recent(self, limit: int = 10) -> list[dict]:
         """Get the most recent ARKs registered on the blockchain."""
         latest_block = self.w3.eth.block_number
-        chunk_size = 10000
+        chunk_size = 5000
         events = []
         
         current_to_block = latest_block
@@ -116,9 +116,13 @@ class ARKService:
                     fromBlock=current_from_block, 
                     toBlock=current_to_block
                 )
-                events = chunk_events + events
-            except Exception:
-                # If chunking still fails, break to avoid infinite loop
+                events = list(chunk_events) + events
+            except Exception as e:
+                import logging
+                logging.error(f"Error fetching logs from {current_from_block} to {current_to_block}: {e}")
+                if chunk_size > 1000:
+                    chunk_size = 1000
+                    continue
                 break
             
             # Move backwards
