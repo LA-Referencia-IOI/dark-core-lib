@@ -103,11 +103,27 @@ class ARKService:
 
     def get_recent(self, limit: int = 10) -> list[dict]:
         """Get the most recent ARKs registered on the blockchain."""
-        # Get all ARKCreated events. For production with huge blocks, this might need optimization,
-        # but for now, we scan from block 0 to latest.
-        events = self.contract.events.ARKCreated.get_logs(fromBlock=0, toBlock='latest')
+        latest_block = self.w3.eth.block_number
+        chunk_size = 10000
+        events = []
         
-        # Take the last 'limit' events
+        current_to_block = latest_block
+        
+        while current_to_block >= 0 and len(events) < limit:
+            current_from_block = max(0, current_to_block - chunk_size)
+            try:
+                chunk_events = self.contract.events.ARKCreated.get_logs(
+                    fromBlock=current_from_block, 
+                    toBlock=current_to_block
+                )
+                events = chunk_events + events
+            except Exception:
+                # If chunking still fails, break to avoid infinite loop
+                break
+            
+            # Move backwards
+            current_to_block = current_from_block - 1
+            
         recent_events = events[-limit:] if events else []
         
         result = []
@@ -122,5 +138,4 @@ class ARKService:
                 "cid": args.get("cid"),
             })
             
-        # Reverse to return newest first
         return result[::-1]
