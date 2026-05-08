@@ -96,3 +96,31 @@ class ARKService:
         )
 
         return self.get(naan, name)
+
+    def get_count(self) -> int:
+        """Get the total number of ARKs registered on the blockchain."""
+        return self.contract.functions.get_ark_count().call()
+
+    def get_recent(self, limit: int = 10) -> list[dict]:
+        """Get the most recent ARKs registered on the blockchain."""
+        # Get all ARKCreated events. For production with huge blocks, this might need optimization,
+        # but for now, we scan from block 0 to latest.
+        events = self.contract.events.ARKCreated.get_logs(fromBlock=0, toBlock='latest')
+        
+        # Take the last 'limit' events
+        recent_events = events[-limit:] if events else []
+        
+        result = []
+        for event in recent_events:
+            args = event.get('args', {})
+            result.append({
+                "pid": f"ark:/{args.get('naan')}/{args.get('name')}",
+                "naan": args.get("naan"),
+                "name": args.get("name"),
+                "owner": args.get("owner"),
+                "url": args.get("url"),
+                "cid": args.get("cid"),
+            })
+            
+        # Reverse to return newest first
+        return result[::-1]

@@ -140,3 +140,9 @@ class DARKCoreClient:
 
     def is_connected(self):
         return self.chain.is_connected()
+
+    def get_ark_count(self) -> int:
+        return self.arks.get_count()
+
+    def get_recent_arks(self, limit: int = 10) -> list[dict]:
+        return self.arks.get_recent(limit)
