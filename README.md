@@ -139,6 +139,8 @@ ark = client.create_ark(
     "Qm...",
 )
 
+print(ark.ark_id)
+
 updated = client.update_ark(
     "org-uuid-001",
     "12345",
@@ -146,7 +148,11 @@ updated = client.update_ark(
     "https://example.org/docs/1?v=2",
     "Qm...v2",
 )
+
+print(updated.url)
 ```
+
+`create_ark()` and `update_ark()` are write calls. They submit the transaction, wait for confirmation, and return `ARKInfo` by default. They do not perform an automatic `exists()` read before the write. Worker-style callers that do not need the post-write read can pass `fetch_result=False`.
 
 ## API pública
 
@@ -179,8 +185,9 @@ Vía servicios:
 
 Vía wrappers del cliente:
 
-- `create_ark(uuid, naan, name, url, cid)`
-- `update_ark(uuid, naan, name, url, cid)`
+- `create_ark(uuid, naan, name, url, cid, fetch_result=True)`
+- `update_ark(uuid, naan, name, url, cid, fetch_result=True)`
+- `publish_ark_operations(uuid, operations, pipeline_size=20)`
 - `resolve_ark(naan, name)`
 - `resolve_ark_by_id(ark)`
 - `get_ark(naan, name)`
@@ -192,9 +199,14 @@ Vía servicios:
 
 - `client.arks.create(...)`
 - `client.arks.update(...)`
+- `client.arks.publish_operations(...)`
 - `client.arks.resolve(...)`
 - `client.arks.get(...)`
 - `client.arks.exists(...)`
+
+`create_ark` and `update_ark` return `ARKInfo` by default. With `fetch_result=False`, they return `None` after the transaction confirms and skip the post-write `get_ark()` read. Read methods return chain state and remain unchanged.
+
+`publish_ark_operations` is the worker-oriented fast path. It accepts `ARKPublishOperation` items for one authority UUID, signs individual create/update transactions with sequential pending nonces, sends them in windows controlled by `pipeline_size`, waits for receipts, and returns `ARKPublishResult` values such as `confirmed`, `reverted`, `ambiguous`, `send_failed`, or `not_sent`. It does not expose transaction hashes to callers.
 
 ### Metadata compartida
 

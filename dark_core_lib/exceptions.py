@@ -20,10 +20,19 @@ class ReadOnlyModeError(DarkCoreError):
 class TransactionError(DarkCoreError):
     """Raised when a blockchain transaction fails."""
 
-    def __init__(self, message: str, tx_hash: str = None, gas_used: int = None):
+    def __init__(
+        self,
+        message: str,
+        tx_hash: str = None,
+        gas_used: int = None,
+        status: int = None,
+        block_number: int = None,
+    ):
         super().__init__(message)
         self.tx_hash = tx_hash
         self.gas_used = gas_used
+        self.status = status
+        self.block_number = block_number
 
 
 class AuthorityError(DarkCoreError):

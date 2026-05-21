@@ -102,11 +102,35 @@ class DARKCoreClient:
     def fund_authority_wallet(self, uuid: str, amount_wei: int):
         return self._require_authorities().fund_wallet(uuid, amount_wei)
 
-    def create_ark(self, uuid: str, naan: str, name: str, url: str, cid: str):
-        return self.arks.create(uuid, naan, name, url, cid)
+    def create_ark(
+        self,
+        uuid: str,
+        naan: str,
+        name: str,
+        url: str,
+        cid: str,
+        fetch_result: bool = True,
+    ):
+        return self.arks.create(uuid, naan, name, url, cid, fetch_result=fetch_result)
 
-    def update_ark(self, uuid: str, naan: str, name: str, url: str, cid: str):
-        return self.arks.update(uuid, naan, name, url, cid)
+    def update_ark(
+        self,
+        uuid: str,
+        naan: str,
+        name: str,
+        url: str,
+        cid: str,
+        fetch_result: bool = True,
+    ):
+        return self.arks.update(uuid, naan, name, url, cid, fetch_result=fetch_result)
+
+    def publish_ark_operations(
+        self,
+        uuid: str,
+        operations,
+        pipeline_size: int = 20,
+    ):
+        return self.arks.publish_operations(uuid, operations, pipeline_size=pipeline_size)
 
     def resolve_ark(self, naan: str, name: str):
         return self.arks.resolve(naan, name)

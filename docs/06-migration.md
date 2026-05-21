@@ -12,6 +12,8 @@ Migrar desde código separado de lectura/escritura a una API única.
    - Nuevo: `DARKCoreClient.from_env(read_only=True|False)`
 3. Métodos:
    - Se mantienen wrappers para minimizar cambios.
+   - `create_ark` y `update_ark` siguen devolviendo `ARKInfo` por defecto. Para rutas internas rápidas se puede usar `fetch_result=False`.
+   - Para workers con alto volumen, `publish_ark_operations` permite enviar operaciones create/update individuales con nonces consecutivos y recibir un resultado semántico por ARK.
 4. Configuración:
    - Esquema unificado de variables `DARK_*`.
 

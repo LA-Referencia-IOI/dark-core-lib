@@ -19,6 +19,7 @@ def _get_signed_raw_tx(signed) -> bytes:
 
 def send_contract_tx(w3, contract_func, account, gas_limit: int, timeout_seconds: int) -> TxReceiptInfo:
     """Build, sign, send and confirm a transaction against a contract."""
+    tx_hash_hex = None
     try:
         tx = contract_func.build_transaction(
             {
@@ -39,6 +40,8 @@ def send_contract_tx(w3, contract_func, account, gas_limit: int, timeout_seconds
                 "Transaction reverted",
                 tx_hash=tx_hash_hex,
                 gas_used=receipt.get("gasUsed"),
+                status=receipt.get("status"),
+                block_number=receipt.get("blockNumber"),
             )
 
         return TxReceiptInfo(
@@ -50,7 +53,7 @@ def send_contract_tx(w3, contract_func, account, gas_limit: int, timeout_seconds
     except TransactionError:
         raise
     except Exception as exc:
-        raise TransactionError(f"Transaction failed: {exc}") from exc
+        raise TransactionError(f"Transaction failed: {exc}", tx_hash=tx_hash_hex) from exc
 
 
 def send_native_transfer(w3, sender_account, to_address: str, amount_wei: int, timeout_seconds: int) -> TxReceiptInfo:

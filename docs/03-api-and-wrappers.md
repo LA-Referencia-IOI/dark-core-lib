@@ -45,8 +45,9 @@ Servicios equivalentes:
 
 Wrappers:
 
-- `create_ark(uuid, naan, name, url, cid)`
-- `update_ark(uuid, naan, name, url, cid)`
+- `create_ark(uuid, naan, name, url, cid, fetch_result=True)`
+- `update_ark(uuid, naan, name, url, cid, fetch_result=True)`
+- `publish_ark_operations(uuid, operations, pipeline_size=20)`
 - `resolve_ark(naan, name)`
 - `resolve_ark_by_id(ark)`
 - `get_ark(naan, name)`
@@ -58,9 +59,14 @@ Servicios equivalentes:
 
 - `client.arks.create(...)`
 - `client.arks.update(...)`
+- `client.arks.publish_operations(...)`
 - `client.arks.resolve(...)`
 - `client.arks.get(...)`
 - `client.arks.exists(...)`
+
+`create_ark` and `update_ark` do not run `exists()` before the write. They return `ARKInfo` by default after confirmation. Pass `fetch_result=False` for write-only paths that should skip the post-write `get()` read and return `None`.
+
+`publish_ark_operations` is intended for services such as the minter worker. It receives semantic ARK create/update operations for one authority, pipelines individual signed transactions with sequential pending nonces, waits for receipts, and returns one semantic result per operation without exposing transaction hashes.
 
 ## Metadata compartida
 

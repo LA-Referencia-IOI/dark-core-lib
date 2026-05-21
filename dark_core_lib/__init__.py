@@ -17,7 +17,13 @@ from dark_core_lib.metadata import (
     StoredDocument,
     get_metadata_storage,
 )
-from dark_core_lib.models import ARKInfo, AuthorityInfo, TxReceiptInfo
+from dark_core_lib.models import (
+    ARKInfo,
+    ARKPublishOperation,
+    ARKPublishResult,
+    AuthorityInfo,
+    TxReceiptInfo,
+)
 from dark_core_lib.exceptions import (
     DarkCoreError,
     ConfigurationError,
@@ -40,6 +46,8 @@ __all__ = [
     "DARKCoreClient",
     "CoreConfig",
     "ARKInfo",
+    "ARKPublishOperation",
+    "ARKPublishResult",
     "AuthorityInfo",
     "TxReceiptInfo",
     "AlternateIdentifierL1",

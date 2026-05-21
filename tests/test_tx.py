@@ -26,9 +26,10 @@ class DummyAccountApi:
 
 
 class DummyEth:
-    def __init__(self, signed):
+    def __init__(self, signed, receipt=None):
         self.account = DummyAccountApi(signed)
         self.gas_price = 7
+        self.receipt = receipt or {"status": 1, "gasUsed": 21000, "blockNumber": 11}
 
     def get_transaction_count(self, _address):
         return 3
@@ -38,12 +39,12 @@ class DummyEth:
 
     def wait_for_transaction_receipt(self, _tx_hash, timeout):
         assert timeout == 120
-        return {"status": 1, "gasUsed": 21000, "blockNumber": 11}
+        return self.receipt
 
 
 class DummyW3:
-    def __init__(self, signed):
-        self.eth = DummyEth(signed)
+    def __init__(self, signed, receipt=None):
+        self.eth = DummyEth(signed, receipt=receipt)
 
 
 class DummyContractFunc:
@@ -66,6 +67,23 @@ def test_send_contract_tx_accepts_raw_transaction_attr():
         timeout_seconds=120,
     )
     assert receipt.status == 1
+
+
+def test_send_contract_tx_revert_preserves_receipt_details():
+    w3 = DummyW3(DummySignedSnake(), receipt={"status": 0, "gasUsed": 999, "blockNumber": 22})
+    with pytest.raises(TransactionError) as exc_info:
+        send_contract_tx(
+            w3=w3,
+            contract_func=DummyContractFunc(),
+            account=DummyAccount(),
+            gas_limit=500000,
+            timeout_seconds=120,
+        )
+
+    assert exc_info.value.tx_hash == "0xabc123"
+    assert exc_info.value.status == 0
+    assert exc_info.value.gas_used == 999
+    assert exc_info.value.block_number == 22
 
 
 def test_send_native_transfer_accepts_rawTransaction_attr():

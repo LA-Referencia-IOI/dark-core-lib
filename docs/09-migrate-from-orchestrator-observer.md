@@ -140,6 +140,10 @@ ark = client.create_ark("org-1", "12345", "doc-1", "https://x", "Qm...")
 url = ro_client.resolve_ark("12345", "doc-1")
 ```
 
+`client.create_ark(...)` and `client.update_ark(...)` still return `ARKInfo` by default. They no longer perform a pre-write `exists()` read; the contract itself is the source of truth for duplicate or missing ARKs. Use `fetch_result=False` only for internal worker-style paths that do not need the resulting ARK data.
+
+For worker pipelines, use `client.publish_ark_operations(...)` with operations for one authority UUID. It sends individual create/update transactions with sequential pending nonces and returns semantic per-ARK results without exposing transaction hashes.
+
 ## 7. Riesgos y mitigaciones
 
 - `Chain ID mismatch`:

@@ -41,3 +41,25 @@ class TxReceiptInfo:
     status: int
     gas_used: Optional[int]
     block_number: Optional[int]
+
+
+@dataclass
+class ARKPublishOperation:
+    """Semantic ARK write operation for pipelined publication."""
+
+    ref: str
+    action: str
+    naan: str
+    name: str
+    url: str
+    cid: str
+
+
+@dataclass
+class ARKPublishResult:
+    """Semantic result for one pipelined ARK write operation."""
+
+    ref: str
+    action: str
+    status: str
+    error: Optional[str] = None
