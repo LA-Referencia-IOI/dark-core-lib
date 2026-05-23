@@ -22,6 +22,7 @@ from dark_core_lib.models import (
     ARKPublishOperation,
     ARKPublishResult,
     AuthorityInfo,
+    ChainCapacityInfo,
     TxReceiptInfo,
 )
 from dark_core_lib.exceptions import (
@@ -49,6 +50,7 @@ __all__ = [
     "ARKPublishOperation",
     "ARKPublishResult",
     "AuthorityInfo",
+    "ChainCapacityInfo",
     "TxReceiptInfo",
     "AlternateIdentifierL1",
     "Level1Metadata",

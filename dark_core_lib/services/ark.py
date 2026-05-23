@@ -27,6 +27,11 @@ class ARKService:
         if self.authority_service is None:
             raise ReadOnlyModeError("Authority service is not configured")
 
+    def _account_for_authority(self, uuid: str):
+        """Return the signing account for an authority UUID."""
+        _, private_key = self.authority_service.get_signing_credentials(uuid)
+        return self.w3.eth.account.from_key(private_key)
+
     def resolve(self, naan: str, name: str) -> str:
         """Resolve ARK identifier to URL."""
         try:
@@ -71,8 +76,7 @@ class ARKService:
         """Create a new ARK owned by an authority UUID."""
         self._ensure_write_mode()
 
-        _, private_key = self.authority_service.get_signing_credentials(uuid)
-        account = self.w3.eth.account.from_key(private_key)
+        account = self._account_for_authority(uuid)
 
         send_contract_tx(
             self.w3,
@@ -98,8 +102,7 @@ class ARKService:
         """Update an existing ARK using authority UUID credentials."""
         self._ensure_write_mode()
 
-        _, private_key = self.authority_service.get_signing_credentials(uuid)
-        account = self.w3.eth.account.from_key(private_key)
+        account = self._account_for_authority(uuid)
 
         send_contract_tx(
             self.w3,
@@ -112,6 +115,87 @@ class ARKService:
         if fetch_result:
             return self.get(naan, name)
         return None
+
+    def estimate_operation_gas(self, uuid: str, operation: ARKPublishOperation) -> int:
+        """Estimate gas for one semantic ARK write operation."""
+        self._ensure_write_mode()
+        account = self._account_for_authority(uuid)
+        contract_func = self._contract_func_for_operation(operation)
+        return int(contract_func.estimate_gas({"from": account.address}))
+
+    def publish_operation(
+        self,
+        uuid: str,
+        operation: ARKPublishOperation,
+        gas_limit: int,
+        gas_estimate: Optional[int] = None,
+    ) -> ARKPublishResult:
+        """Publish one ARK operation with an explicit gas limit."""
+        self._ensure_write_mode()
+        if gas_limit <= 0:
+            raise ValueError("gas_limit must be > 0")
+
+        account = self._account_for_authority(uuid)
+        try:
+            contract_func = self._contract_func_for_operation(operation)
+            tx_payload = {
+                "from": account.address,
+                "nonce": self.w3.eth.get_transaction_count(account.address, "pending"),
+                "gas": gas_limit,
+                "gasPrice": self.w3.eth.gas_price,
+            }
+            chain_id = getattr(self.config, "chain_id", None)
+            if chain_id is not None:
+                tx_payload["chainId"] = chain_id
+
+            tx = contract_func.build_transaction(tx_payload)
+            signed = self.w3.eth.account.sign_transaction(tx, account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(_get_signed_raw_tx(signed))
+        except Exception as exc:
+            return ARKPublishResult(
+                ref=operation.ref,
+                action=operation.action,
+                status="send_failed",
+                error=f"Failed to send transaction: {exc}",
+                gas_limit=gas_limit,
+                gas_estimate=gas_estimate,
+            )
+
+        try:
+            receipt = self.w3.eth.wait_for_transaction_receipt(
+                tx_hash,
+                timeout=self.config.tx_timeout_seconds,
+            )
+        except Exception as exc:
+            return ARKPublishResult(
+                ref=operation.ref,
+                action=operation.action,
+                status="ambiguous",
+                error=f"Failed waiting for receipt: {exc}",
+                gas_limit=gas_limit,
+                gas_estimate=gas_estimate,
+            )
+
+        status = receipt.get("status", 0)
+        if status == 1:
+            return ARKPublishResult(
+                ref=operation.ref,
+                action=operation.action,
+                status="confirmed",
+                gas_limit=gas_limit,
+                gas_used=receipt.get("gasUsed"),
+                gas_estimate=gas_estimate,
+            )
+
+        return ARKPublishResult(
+            ref=operation.ref,
+            action=operation.action,
+            status="reverted",
+            error="Transaction reverted",
+            gas_limit=gas_limit,
+            gas_used=receipt.get("gasUsed"),
+            gas_estimate=gas_estimate,
+        )
 
     def publish_operations(
         self,
@@ -126,8 +210,7 @@ class ARKService:
         if not operations:
             return []
 
-        _, private_key = self.authority_service.get_signing_credentials(uuid)
-        account = self.w3.eth.account.from_key(private_key)
+        account = self._account_for_authority(uuid)
         nonce = self.w3.eth.get_transaction_count(account.address, "pending")
 
         results: list[ARKPublishResult] = []

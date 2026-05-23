@@ -81,7 +81,7 @@ DARK_AUTHORITY_ADDRESS=0x...
 DARK_ADMIN_PRIVATE_KEY=0x...
 DARK_READ_ONLY=False
 DARK_VALIDATE_CHAIN_ID=True
-DARK_GAS_LIMIT=500000
+DARK_GAS_LIMIT=550000
 DARK_TX_TIMEOUT_SECONDS=120
 ```
 
@@ -161,6 +161,7 @@ print(updated.url)
 - `DARKCoreClient.from_env(env_path=None, read_only=None)`
 - `is_connected()`
 - `get_block_number()`
+- `get_chain_capacity(max_page_size=20)`
 - `get_admin_balance()`
 
 ### Autoridades
@@ -188,6 +189,8 @@ Vía wrappers del cliente:
 - `create_ark(uuid, naan, name, url, cid, fetch_result=True)`
 - `update_ark(uuid, naan, name, url, cid, fetch_result=True)`
 - `publish_ark_operations(uuid, operations, pipeline_size=20)`
+- `estimate_ark_operation_gas(uuid, operation)`
+- `publish_ark_operation(uuid, operation, gas_limit, gas_estimate=None)`
 - `resolve_ark(naan, name)`
 - `resolve_ark_by_id(ark)`
 - `get_ark(naan, name)`
@@ -200,6 +203,8 @@ Vía servicios:
 - `client.arks.create(...)`
 - `client.arks.update(...)`
 - `client.arks.publish_operations(...)`
+- `client.arks.estimate_operation_gas(...)`
+- `client.arks.publish_operation(...)`
 - `client.arks.resolve(...)`
 - `client.arks.get(...)`
 - `client.arks.exists(...)`
@@ -207,6 +212,10 @@ Vía servicios:
 `create_ark` and `update_ark` return `ARKInfo` by default. With `fetch_result=False`, they return `None` after the transaction confirms and skip the post-write `get_ark()` read. Read methods return chain state and remain unchanged.
 
 `publish_ark_operations` is the worker-oriented fast path. It accepts `ARKPublishOperation` items for one authority UUID, signs individual create/update transactions with sequential pending nonces, sends them in windows controlled by `pipeline_size`, waits for receipts, and returns `ARKPublishResult` values such as `confirmed`, `reverted`, `ambiguous`, `send_failed`, or `not_sent`. It does not expose transaction hashes to callers.
+
+`estimate_ark_operation_gas` and `publish_ark_operation` are the single-operation rescue path used by the minter. They use the same semantic `ARKPublishOperation` shape, allow the caller to pass an explicit gas limit, and return semantic status plus gas metadata without exposing transaction hashes.
+
+`get_chain_capacity` returns a semantic `ChainCapacityInfo` snapshot for worker pacing. It reads block progress and, when available, Besu txpool statistics through the core-lib web3 client, then recommends a temporary page size without exposing raw RPC details to callers.
 
 ### Metadata compartida
 

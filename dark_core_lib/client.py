@@ -132,6 +132,23 @@ class DARKCoreClient:
     ):
         return self.arks.publish_operations(uuid, operations, pipeline_size=pipeline_size)
 
+    def estimate_ark_operation_gas(self, uuid: str, operation):
+        return self.arks.estimate_operation_gas(uuid, operation)
+
+    def publish_ark_operation(
+        self,
+        uuid: str,
+        operation,
+        gas_limit: int,
+        gas_estimate: Optional[int] = None,
+    ):
+        return self.arks.publish_operation(
+            uuid,
+            operation,
+            gas_limit=gas_limit,
+            gas_estimate=gas_estimate,
+        )
+
     def resolve_ark(self, naan: str, name: str):
         return self.arks.resolve(naan, name)
 
@@ -161,6 +178,9 @@ class DARKCoreClient:
 
     def get_block_number(self):
         return self.chain.get_block_number()
+
+    def get_chain_capacity(self, max_page_size: int = 20):
+        return self.chain.get_capacity(max_page_size=max_page_size)
 
     def is_connected(self):
         return self.chain.is_connected()

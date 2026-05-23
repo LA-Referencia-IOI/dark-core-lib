@@ -186,6 +186,10 @@ class _PipelineContractFunc:
     def build_transaction(self, payload):
         return {"action": self.action, "args": self.args, **payload}
 
+    def estimate_gas(self, payload):
+        assert "from" in payload
+        return 123456
+
 
 class _PipelineContractFunctions:
     def create_ark(self, naan, name, url, cid):
@@ -285,3 +289,47 @@ def test_publish_operations_marks_remaining_sent_as_ambiguous_on_receipt_failure
     results = service.publish_operations("auth-uuid", operations, pipeline_size=20)
 
     assert [result.status for result in results] == ["confirmed", "ambiguous", "ambiguous"]
+
+
+def test_estimate_operation_gas_uses_authority_wallet():
+    service, eth = _build_pipeline_service()
+    operation = _operation("one", "create")
+
+    estimate = service.estimate_operation_gas("auth-uuid", operation)
+
+    assert estimate == 123456
+    assert eth.account.from_key(eth.account_obj.key).address == eth.account_obj.address
+
+
+def test_publish_operation_uses_explicit_gas_limit_without_exposing_tx_hash():
+    service, eth = _build_pipeline_service(
+        receipts=[{"status": 1, "gasUsed": 456789, "blockNumber": 11}]
+    )
+    operation = _operation("one", "create")
+
+    result = service.publish_operation(
+        "auth-uuid",
+        operation,
+        gas_limit=1000000,
+        gas_estimate=600000,
+    )
+
+    assert result.status == "confirmed"
+    assert result.gas_limit == 1000000
+    assert result.gas_estimate == 600000
+    assert result.gas_used == 456789
+    assert not hasattr(result, "tx_hash")
+    assert eth.nonce_calls == [(eth.account_obj.address, "pending")]
+    assert eth.signed_payloads[0]["gas"] == 1000000
+
+
+def test_publish_operation_classifies_reverted_receipt():
+    service, _eth = _build_pipeline_service(
+        receipts=[{"status": 0, "gasUsed": 500000, "blockNumber": 11}]
+    )
+
+    result = service.publish_operation("auth-uuid", _operation("one"), gas_limit=1000000)
+
+    assert result.status == "reverted"
+    assert result.gas_used == 500000
+    assert "reverted" in result.error

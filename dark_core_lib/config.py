@@ -27,7 +27,7 @@ class CoreConfig:
     admin_private_key: Optional[str] = None
     read_only: bool = False
     validate_chain_id: bool = True
-    default_gas_limit: int = 500000
+    default_gas_limit: int = 550000
     tx_timeout_seconds: int = 120
     dark_abi: list = field(default_factory=lambda: DARK_ABI)
     authority_abi: list = field(default_factory=lambda: AUTHORITY_ABI)
@@ -61,7 +61,7 @@ class CoreConfig:
             admin_private_key=(os.getenv("DARK_ADMIN_PRIVATE_KEY") or "").strip() or None,
             read_only=resolved_read_only,
             validate_chain_id=_parse_bool(os.getenv("DARK_VALIDATE_CHAIN_ID"), True),
-            default_gas_limit=int(gas_limit_raw) if gas_limit_raw else 500000,
+            default_gas_limit=int(gas_limit_raw) if gas_limit_raw else 550000,
             tx_timeout_seconds=int(tx_timeout_raw) if tx_timeout_raw else 120,
         )
 

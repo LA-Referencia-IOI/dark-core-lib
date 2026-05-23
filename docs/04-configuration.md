@@ -19,9 +19,11 @@
 
 ### Opcionales
 
-- `DARK_READ_ONLY`
-- `DARK_GAS_LIMIT`
-- `DARK_TX_TIMEOUT_SECONDS`
+| Variable | Default | Descripcion |
+| --- | --- | --- |
+| `DARK_READ_ONLY` | `true` | Modo lectura por defecto; usar `false` para operaciones firmadas |
+| `DARK_GAS_LIMIT` | `550000` | Limite de gas por transaccion de escritura; el minter usa el doble solo en rescue |
+| `DARK_TX_TIMEOUT_SECONDS` | `120` | Tiempo maximo esperando receipt |
 
 ## Archivos recomendados
 
