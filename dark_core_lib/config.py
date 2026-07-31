@@ -1,5 +1,6 @@
 """Configuration model for dark-core-lib."""
 
+import json
 import os
 from dataclasses import dataclass, field
 from typing import Optional
@@ -53,6 +54,20 @@ class CoreConfig:
         gas_limit_raw = os.getenv("DARK_GAS_LIMIT")
         tx_timeout_raw = os.getenv("DARK_TX_TIMEOUT_SECONDS")
 
+        # Load ABI from env when set by dark-deployer (extracted from deployed_contracts.ini).
+        # Falls back to the bundled constants in abi.py so the library works standalone.
+        def _load_abi(env_key: str, fallback: list) -> list:
+            raw = os.getenv(env_key)
+            if not raw:
+                return fallback
+            try:
+                return json.loads(raw)
+            except (json.JSONDecodeError, ValueError):
+                return fallback
+
+        dark_abi = _load_abi("DARK_ABI_JSON", DARK_ABI)
+        authority_abi = _load_abi("AUTHORITY_ABI_JSON", AUTHORITY_ABI)
+
         config = cls(
             rpc_url=(os.getenv("DARK_RPC_URL") or "").strip(),
             dark_contract_address=(os.getenv("DARK_CONTRACT_ADDRESS") or "").strip(),
@@ -63,6 +78,8 @@ class CoreConfig:
             validate_chain_id=_parse_bool(os.getenv("DARK_VALIDATE_CHAIN_ID"), True),
             default_gas_limit=int(gas_limit_raw) if gas_limit_raw else 550000,
             tx_timeout_seconds=int(tx_timeout_raw) if tx_timeout_raw else 120,
+            dark_abi=dark_abi,
+            authority_abi=authority_abi,
         )
 
         config.validate()
