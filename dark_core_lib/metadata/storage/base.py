@@ -1,7 +1,8 @@
 """Abstract base classes for shared metadata storage backends."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Optional
 
 
@@ -52,6 +53,20 @@ class StoredDocument:
         return infer_format_from_content_type(self.content_type)
 
 
+@dataclass(frozen=True)
+class ReplicationStatus:
+    """Last live replication snapshot returned by Store API."""
+
+    cid: str
+    status: str
+    total_replicas: int
+    local_replicas: int
+    remote_replicas: int
+    sites: dict[str, int] = field(default_factory=dict)
+    purge_target_met: bool = False
+    checked_at: datetime | None = None
+
+
 class MetadataStorage(ABC):
     """Abstract interface for metadata persistence."""
 
@@ -71,6 +86,22 @@ class MetadataStorage(ABC):
     @abstractmethod
     def health_check(self) -> bool:
         """Check whether the backend is healthy."""
+
+    def get_replication_status(self, cid: str) -> ReplicationStatus:
+        """Return a single-copy status for backends without replication."""
+        self.get_document(cid)
+        return ReplicationStatus(
+            cid=cid,
+            status="pinned",
+            total_replicas=1,
+            local_replicas=1,
+            remote_replicas=0,
+            sites={"local": 1},
+            purge_target_met=True,
+        )
+
+    def close(self) -> None:
+        """Release persistent backend resources when present."""
 
     def store_metadata(self, content: str, format: str) -> str:
         """Backward-compatible text storage wrapper."""

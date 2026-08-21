@@ -1,12 +1,13 @@
 """HTTP metadata storage backend backed by dark-store-api."""
 
 import logging
+from datetime import datetime
 from typing import Optional
 from urllib.parse import quote
 
 import httpx
 
-from dark_core_lib.metadata.storage.base import MetadataStorage, StoredDocument
+from dark_core_lib.metadata.storage.base import MetadataStorage, ReplicationStatus, StoredDocument
 from dark_core_lib.metadata.storage.exceptions import MetadataNotFoundError, StorageError
 
 
@@ -37,6 +38,10 @@ class StoreApiMetadataStorage(MetadataStorage):
             raise ValueError("Store API base_url cannot be empty")
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = timeout_seconds
+        self.client = httpx.Client(
+            timeout=timeout_seconds,
+            limits=httpx.Limits(max_connections=32, max_keepalive_connections=16),
+        )
 
     def store_document(
         self,
@@ -48,11 +53,10 @@ class StoreApiMetadataStorage(MetadataStorage):
         headers = {"Content-Type": content_type}
 
         try:
-            response = httpx.post(
+            response = self.client.post(
                 url,
                 content=content,
                 headers=headers,
-                timeout=self.timeout_seconds,
             )
         except httpx.RequestError as exc:
             raise StorageError(f"Store API request failed: {exc}") from exc
@@ -74,7 +78,7 @@ class StoreApiMetadataStorage(MetadataStorage):
     def get_document(self, cid: str) -> StoredDocument:
         url = f"{self.base_url}/v1/retrieve/{quote(cid, safe='')}"
         try:
-            response = httpx.get(url, timeout=self.timeout_seconds)
+            response = self.client.get(url)
         except httpx.RequestError as exc:
             raise StorageError(f"Store API request failed: {exc}") from exc
 
@@ -93,7 +97,7 @@ class StoreApiMetadataStorage(MetadataStorage):
     def health_check(self) -> bool:
         url = f"{self.base_url}/health"
         try:
-            response = httpx.get(url, timeout=self.timeout_seconds)
+            response = self.client.get(url)
         except Exception as exc:
             logger.warning(f"Store API health check failed: {exc}")
             return False
@@ -112,3 +116,42 @@ class StoreApiMetadataStorage(MetadataStorage):
         if "backend_healthy" in payload:
             return bool(payload["backend_healthy"])
         return payload.get("status") == "healthy"
+
+    def get_replication_status(self, cid: str) -> ReplicationStatus:
+        """Read the live per-site replication snapshot for a CID."""
+        url = f"{self.base_url}/v1/status/{quote(cid, safe='')}"
+        try:
+            response = self.client.get(url)
+        except httpx.RequestError as exc:
+            raise StorageError(f"Store API request failed: {exc}") from exc
+        if response.status_code == 404:
+            return ReplicationStatus(
+                cid=cid,
+                status="unpinned",
+                total_replicas=0,
+                local_replicas=0,
+                remote_replicas=0,
+                purge_target_met=False,
+            )
+        if response.status_code != 200:
+            detail = _extract_error_detail(response)
+            raise StorageError(f"Store API status failed ({response.status_code}): {detail}")
+        try:
+            payload = response.json()
+            replication = payload["replication"]
+            checked_at = replication.get("checked_at")
+            return ReplicationStatus(
+                cid=str(payload["cid"]),
+                status=str(payload["status"]),
+                total_replicas=int(replication["total_replicas"]),
+                local_replicas=int(replication["local_replicas"]),
+                remote_replicas=int(replication["remote_replicas"]),
+                sites={str(key): int(value) for key, value in replication.get("sites", {}).items()},
+                purge_target_met=bool(replication["purge_target_met"]),
+                checked_at=datetime.fromisoformat(checked_at) if checked_at else None,
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise StorageError(f"Store API returned invalid status response: {exc}") from exc
+
+    def close(self) -> None:
+        self.client.close()

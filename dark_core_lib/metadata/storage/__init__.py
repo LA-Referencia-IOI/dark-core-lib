@@ -3,6 +3,7 @@
 from dark_core_lib.metadata.storage.base import (
     FORMAT_TO_CONTENT_TYPE,
     MetadataStorage,
+    ReplicationStatus,
     StoredDocument,
 )
 from dark_core_lib.metadata.storage.exceptions import MetadataNotFoundError, StorageError
@@ -28,6 +29,7 @@ __all__ = [
     "FORMAT_TO_CONTENT_TYPE",
     "MetadataNotFoundError",
     "MetadataStorage",
+    "ReplicationStatus",
     "StorageError",
     "StoredDocument",
     "FileSystemMetadataStorage",
