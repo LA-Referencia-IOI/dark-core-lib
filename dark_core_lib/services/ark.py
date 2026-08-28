@@ -400,38 +400,76 @@ class ARKService:
         """Get the total number of ARKs registered on the blockchain."""
         return self.contract.functions.get_ark_count().call()
 
-    def get_recent(self, limit: int = 10) -> list[dict]:
-        """Get the most recent ARKs registered on the blockchain."""
+    #: Block window get_recent scans at a time, walking back from the tip.
+    #: Deliberately small and fixed: an ARKCreated burst can pack thousands of
+    #: events into a few hundred blocks, and the first non-empty window is
+    #: fully decoded. Empty windows are cheap, so a small window is affordable
+    #: even when recent blocks hold no ARKs.
+    _RECENT_WINDOW = 512
+    #: Stop scanning ARKCreated logs after this many blocks back from the tip.
+    #: Older ARKs simply do not appear in the "recent" view.
+    _RECENT_MAX_LOOKBACK_BLOCKS = 100_000
+
+    def get_recent(
+        self,
+        limit: int = 10,
+        max_lookback_blocks: Optional[int] = None,
+    ) -> list[dict]:
+        """Get the most recent ARKs registered on the blockchain.
+
+        Walks ``ARKCreated`` logs backwards from the chain tip one block
+        window at a time, stopping as soon as ``limit`` events are collected
+        or ``max_lookback_blocks`` have been scanned. When no ARKs exist the
+        on-chain counter short-circuits the scan entirely.
+        """
+        import logging
+
+        if self.get_count() == 0:
+            return []
+
+        if max_lookback_blocks is None:
+            max_lookback_blocks = self._RECENT_MAX_LOOKBACK_BLOCKS
+
         latest_block = self.w3.eth.block_number
-        chunk_size = 5000
-        events = []
-        
+        oldest_block = max(0, latest_block - max_lookback_blocks)
+
+        events: list = []
         current_to_block = latest_block
-        
-        while current_to_block >= 0 and len(events) < limit:
-            current_from_block = max(0, current_to_block - chunk_size)
-            try:
-                chunk_events = self.contract.events.ARKCreated.get_logs(
-                    fromBlock=current_from_block, 
-                    toBlock=current_to_block
-                )
-                events = list(chunk_events) + events
-            except Exception as e:
-                import logging
-                logging.error(f"Error fetching logs from {current_from_block} to {current_to_block}: {e}")
-                if chunk_size > 1000:
-                    chunk_size = 1000
-                    continue
-                break
-            
-            # Move backwards
+
+        while current_to_block > oldest_block and len(events) < limit:
+            span = self._RECENT_WINDOW
+            while True:
+                current_from_block = max(oldest_block, current_to_block - span + 1)
+                try:
+                    chunk_events = self.contract.events.ARKCreated.get_logs(
+                        fromBlock=current_from_block,
+                        toBlock=current_to_block,
+                    )
+                    break
+                except Exception as exc:
+                    if span > 64:
+                        span //= 2
+                        continue
+                    logging.error(
+                        "get_recent: giving up on blocks %s-%s: %s",
+                        current_from_block,
+                        current_to_block,
+                        exc,
+                    )
+                    return self._format_recent_events(events, limit)
+
+            events = list(chunk_events) + events
             current_to_block = current_from_block - 1
-            
+
+        return self._format_recent_events(events, limit)
+
+    @staticmethod
+    def _format_recent_events(events: list, limit: int) -> list[dict]:
+        """Map raw ARKCreated events to newest-first ARK dictionaries."""
         recent_events = events[-limit:] if events else []
-        
         result = []
         for event in recent_events:
-            args = event.get('args', {})
+            args = event.get("args", {})
             result.append({
                 "pid": f"ark:/{args.get('naan')}/{args.get('name')}",
                 "naan": args.get("naan"),
@@ -440,5 +478,4 @@ class ARKService:
                 "url": args.get("url"),
                 "cid": args.get("cid"),
             })
-            
         return result[::-1]
