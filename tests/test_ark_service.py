@@ -333,3 +333,74 @@ def test_publish_operation_classifies_reverted_receipt():
     assert result.status == "reverted"
     assert result.gas_used == 500000
     assert "reverted" in result.error
+
+
+def _recent_service(count, block_number, get_logs):
+    get_logs_mock = Mock(side_effect=get_logs)
+    contract = SimpleNamespace(
+        functions=SimpleNamespace(
+            get_ark_count=Mock(return_value=SimpleNamespace(call=Mock(return_value=count))),
+        ),
+        events=SimpleNamespace(
+            ARKCreated=SimpleNamespace(get_logs=get_logs_mock),
+        ),
+    )
+    w3 = SimpleNamespace(eth=SimpleNamespace(block_number=block_number))
+    config = SimpleNamespace(read_only=True)
+    return ARKService(w3, contract, config), get_logs_mock
+
+
+def _ark_event(naan, name):
+    return {"args": {"naan": naan, "name": name, "owner": "0x" + "c" * 40,
+                     "url": f"https://x/{name}", "cid": f"cid-{name}"}}
+
+
+def test_get_recent_short_circuits_when_no_arks_exist():
+    service, get_logs = _recent_service(0, 1_000_000, lambda **_: [])
+
+    assert service.get_recent(limit=5) == []
+    get_logs.assert_not_called()
+
+
+def test_get_recent_stops_after_max_lookback_instead_of_walking_to_genesis():
+    service, get_logs = _recent_service(3, 1_000_000, lambda **_: [])
+
+    result = service.get_recent(limit=5, max_lookback_blocks=10_000)
+
+    assert result == []
+    # ~10_000 / 512 fixed windows, not a walk back to genesis.
+    assert get_logs.call_count == 20
+    calls = [c.kwargs for c in get_logs.call_args_list]
+    assert calls[0]["toBlock"] == 1_000_000
+    # The scan halts exactly at the lookback floor, never below it.
+    assert min(c["fromBlock"] for c in calls) == 990_000
+
+
+def test_get_recent_early_exits_and_returns_newest_first():
+    events = [_ark_event("12345", f"a{i}") for i in range(6)]
+    service, get_logs = _recent_service(6, 50_000, lambda **_: events)
+
+    result = service.get_recent(limit=3)
+
+    assert get_logs.call_count == 1
+    assert [r["name"] for r in result] == ["a5", "a4", "a3"]
+    assert result[0]["pid"] == "ark:/12345/a5"
+
+
+def test_get_recent_shrinks_window_on_rpc_error():
+    seen_spans = []
+
+    def flaky(**kwargs):
+        span = kwargs["toBlock"] - kwargs["fromBlock"] + 1
+        seen_spans.append(span)
+        if span > 400:
+            raise ValueError("Requested range exceeds maximum RPC range limit")
+        return []
+
+    service, _ = _recent_service(1, 10_000, flaky)
+
+    service.get_recent(limit=5, max_lookback_blocks=6_000)
+
+    # The 512-block window is rejected and halved to 256 rather than aborting.
+    assert seen_spans[0] == 512
+    assert seen_spans[1] == 256
