@@ -1,7 +1,7 @@
 """Abstract base classes for shared metadata storage backends."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
@@ -60,10 +60,6 @@ class ReplicationStatus:
     cid: str
     status: str
     total_replicas: int
-    local_replicas: int
-    remote_replicas: int
-    sites: dict[str, int] = field(default_factory=dict)
-    purge_target_met: bool = False
     checked_at: datetime | None = None
 
 
@@ -94,10 +90,6 @@ class MetadataStorage(ABC):
             cid=cid,
             status="pinned",
             total_replicas=1,
-            local_replicas=1,
-            remote_replicas=0,
-            sites={"local": 1},
-            purge_target_met=True,
         )
 
     def close(self) -> None:

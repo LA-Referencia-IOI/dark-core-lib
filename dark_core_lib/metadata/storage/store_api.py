@@ -129,9 +129,6 @@ class StoreApiMetadataStorage(MetadataStorage):
                 cid=cid,
                 status="unpinned",
                 total_replicas=0,
-                local_replicas=0,
-                remote_replicas=0,
-                purge_target_met=False,
             )
         if response.status_code != 200:
             detail = _extract_error_detail(response)
@@ -139,16 +136,24 @@ class StoreApiMetadataStorage(MetadataStorage):
         try:
             payload = response.json()
             replication = payload["replication"]
-            checked_at = replication.get("checked_at")
+            checked_at_value = replication.get("checked_at")
+            # Store API serializes UTC timestamps with the RFC 3339 ``Z``
+            # suffix.  Python 3.10's ``fromisoformat`` only accepts the
+            # equivalent explicit ``+00:00`` offset.
+            checked_at = (
+                datetime.fromisoformat(
+                    checked_at_value[:-1] + "+00:00"
+                    if isinstance(checked_at_value, str) and checked_at_value.endswith("Z")
+                    else checked_at_value
+                )
+                if checked_at_value
+                else None
+            )
             return ReplicationStatus(
                 cid=str(payload["cid"]),
                 status=str(payload["status"]),
                 total_replicas=int(replication["total_replicas"]),
-                local_replicas=int(replication["local_replicas"]),
-                remote_replicas=int(replication["remote_replicas"]),
-                sites={str(key): int(value) for key, value in replication.get("sites", {}).items()},
-                purge_target_met=bool(replication["purge_target_met"]),
-                checked_at=datetime.fromisoformat(checked_at) if checked_at else None,
+                checked_at=checked_at,
             )
         except (KeyError, TypeError, ValueError) as exc:
             raise StorageError(f"Store API returned invalid status response: {exc}") from exc

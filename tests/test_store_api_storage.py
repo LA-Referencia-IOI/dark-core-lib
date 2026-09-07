@@ -45,10 +45,7 @@ def test_reuses_client_for_store_status_and_close():
     assert storage.store_document(b"data", "application/json") == "bafy"
     status = storage.get_replication_status("bafy")
     assert status.total_replicas == 3
-    assert status.local_replicas == 2
-    assert status.remote_replicas == 1
-    assert status.sites == {"site-a": 2, "site-b": 1}
-    assert status.purge_target_met
+    assert status.checked_at is not None
 
     storage.close()
     client.close.assert_called_once_with()
@@ -67,5 +64,32 @@ def test_missing_status_is_zero_copy_and_not_purgeable():
     status = storage.get_replication_status("missing")
 
     assert status.total_replicas == 0
-    assert not status.purge_target_met
+    assert status.status == "unpinned"
+    storage.close()
+
+
+def test_replication_status_accepts_rfc3339_utc_z_suffix():
+    storage = StoreApiMetadataStorage("http://store-api:8003")
+    client = Mock()
+    client.get.return_value = _response(
+        "GET",
+        "http://store-api:8003/v1/status/bafy",
+        200,
+        {
+            "cid": "bafy",
+            "status": "pinned",
+            "replication": {
+                "total_replicas": 2,
+                "checked_at": "2026-09-06T17:06:20.460243Z",
+            },
+        },
+    )
+    storage.client.close()
+    storage.client = client
+
+    status = storage.get_replication_status("bafy")
+
+    assert status.total_replicas == 2
+    assert status.checked_at is not None
+    assert status.checked_at.utcoffset().total_seconds() == 0
     storage.close()
