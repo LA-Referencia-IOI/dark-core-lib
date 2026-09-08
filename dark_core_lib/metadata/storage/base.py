@@ -60,6 +60,10 @@ class ReplicationStatus:
     cid: str
     status: str
     total_replicas: int
+    queued_replicas: int = 0
+    pinning_replicas: int = 0
+    error_replicas: int = 0
+    assigned_replicas: int = 0
     checked_at: datetime | None = None
 
 
@@ -91,6 +95,14 @@ class MetadataStorage(ABC):
             status="pinned",
             total_replicas=1,
         )
+
+    def get_replication_statuses(self, cids: list[str]) -> dict[str, ReplicationStatus]:
+        """Observe a bounded CID batch; subclasses may override efficiently."""
+        return {cid: self.get_replication_status(cid) for cid in cids}
+
+    def ensure_replication(self, cids: list[str], target_replicas: int) -> dict[str, str]:
+        """Request higher pin allocations when the backend supports it."""
+        return {cid: "unsupported" for cid in cids}
 
     def close(self) -> None:
         """Release persistent backend resources when present."""

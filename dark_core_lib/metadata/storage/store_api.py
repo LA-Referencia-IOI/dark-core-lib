@@ -135,28 +135,74 @@ class StoreApiMetadataStorage(MetadataStorage):
             raise StorageError(f"Store API status failed ({response.status_code}): {detail}")
         try:
             payload = response.json()
-            replication = payload["replication"]
-            checked_at_value = replication.get("checked_at")
-            # Store API serializes UTC timestamps with the RFC 3339 ``Z``
-            # suffix.  Python 3.10's ``fromisoformat`` only accepts the
-            # equivalent explicit ``+00:00`` offset.
-            checked_at = (
-                datetime.fromisoformat(
-                    checked_at_value[:-1] + "+00:00"
-                    if isinstance(checked_at_value, str) and checked_at_value.endswith("Z")
-                    else checked_at_value
-                )
-                if checked_at_value
-                else None
-            )
-            return ReplicationStatus(
-                cid=str(payload["cid"]),
-                status=str(payload["status"]),
-                total_replicas=int(replication["total_replicas"]),
-                checked_at=checked_at,
-            )
+            return self._replication_status_from_payload(payload)
         except (KeyError, TypeError, ValueError) as exc:
             raise StorageError(f"Store API returned invalid status response: {exc}") from exc
+
+    @staticmethod
+    def _replication_status_from_payload(payload: dict) -> ReplicationStatus:
+        replication = payload["replication"]
+        checked_at_value = replication.get("checked_at")
+        checked_at = (
+            datetime.fromisoformat(
+                checked_at_value[:-1] + "+00:00"
+                if isinstance(checked_at_value, str) and checked_at_value.endswith("Z")
+                else checked_at_value
+            )
+            if checked_at_value
+            else None
+        )
+        return ReplicationStatus(
+            cid=str(payload["cid"]),
+            status=str(payload["status"]),
+            total_replicas=int(replication["total_replicas"]),
+            queued_replicas=int(replication.get("queued_replicas", 0) or 0),
+            pinning_replicas=int(replication.get("pinning_replicas", 0) or 0),
+            error_replicas=int(replication.get("error_replicas", 0) or 0),
+            assigned_replicas=int(replication.get("assigned_replicas", 0) or 0),
+            checked_at=checked_at,
+        )
+
+    def get_replication_statuses(self, cids: list[str]) -> dict[str, ReplicationStatus]:
+        unique_cids = list(dict.fromkeys(cid for cid in cids if cid))
+        if not unique_cids:
+            return {}
+        try:
+            response = self.client.post(f"{self.base_url}/v1/status/batch", json={"cids": unique_cids})
+        except httpx.RequestError as exc:
+            raise StorageError(f"Store API batch status request failed: {exc}") from exc
+        if response.status_code != 200:
+            detail = _extract_error_detail(response)
+            raise StorageError(f"Store API batch status failed ({response.status_code}): {detail}")
+        try:
+            payload = response.json()
+            return {
+                str(row["cid"]): self._replication_status_from_payload(row)
+                for row in payload["statuses"]
+                if isinstance(row, dict)
+            }
+        except (KeyError, TypeError, ValueError) as exc:
+            raise StorageError(f"Store API returned invalid batch status response: {exc}") from exc
+
+    def ensure_replication(self, cids: list[str], target_replicas: int) -> dict[str, str]:
+        unique_cids = list(dict.fromkeys(cid for cid in cids if cid))
+        if not unique_cids:
+            return {}
+        try:
+            response = self.client.post(
+                f"{self.base_url}/v1/replication/ensure",
+                json={"cids": unique_cids, "target_replicas": target_replicas},
+            )
+        except httpx.RequestError as exc:
+            raise StorageError(f"Store API replication promotion failed: {exc}") from exc
+        if response.status_code != 200:
+            detail = _extract_error_detail(response)
+            raise StorageError(f"Store API replication promotion failed ({response.status_code}): {detail}")
+        try:
+            payload = response.json()
+            return {str(cid): str(status) for cid, status in payload["results"].items()}
+        except (KeyError, TypeError, ValueError) as exc:
+            raise StorageError(f"Store API returned invalid replication response: {exc}") from exc
 
     def close(self) -> None:
         self.client.close()

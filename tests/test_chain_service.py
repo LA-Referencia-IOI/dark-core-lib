@@ -92,6 +92,24 @@ def test_chain_capacity_tolerates_missing_txpool_stats():
     assert capacity.txpool_pending is None
 
 
+def test_chain_capacity_can_skip_txpool_probes_for_status():
+    provider = _Provider(
+        responses={
+            "txpool_besuStatistics": RuntimeError("must not be called"),
+            "txpool_status": RuntimeError("must not be called"),
+        }
+    )
+    w3 = _W3()
+    w3.provider = provider
+
+    capacity = ChainService(w3).get_capacity(max_page_size=20, include_txpool=False)
+
+    assert capacity.available is True
+    assert capacity.state == "healthy"
+    assert capacity.txpool_pending is None
+    assert provider.calls == []
+
+
 def test_chain_capacity_unavailable_when_rpc_disconnected():
     service = ChainService(SimpleNamespace(is_connected=lambda: False))
 

@@ -21,7 +21,9 @@ class ChainService:
     def get_block_number(self) -> int:
         return self.w3.eth.block_number
 
-    def get_capacity(self, max_page_size: int = 20) -> ChainCapacityInfo:
+    def get_capacity(
+        self, max_page_size: int = 20, *, include_txpool: bool = True
+    ) -> ChainCapacityInfo:
         """Return a semantic capacity recommendation for chain writes."""
         safe_max = max(int(max_page_size or 0), 1)
         min_page_size = 1
@@ -59,7 +61,7 @@ class ChainService:
             self._last_capacity_block_progress_monotonic = now
 
         block_age_seconds = now - self._last_capacity_block_progress_monotonic
-        txpool_pending = self._read_txpool_pending()
+        txpool_pending = self._read_txpool_pending() if include_txpool else None
 
         txpool_high_watermark = max(safe_max * 2, 40)
         txpool_pause_watermark = max(safe_max * 5, 100)

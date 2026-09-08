@@ -179,8 +179,16 @@ class DARKCoreClient:
     def get_block_number(self):
         return self.chain.get_block_number()
 
-    def get_chain_capacity(self, max_page_size: int = 20):
-        return self.chain.get_capacity(max_page_size=max_page_size)
+    def get_chain_capacity(self, max_page_size: int = 20, include_txpool: bool = True):
+        """Return chain capacity, optionally skipping slow txpool probes.
+
+        Operational status endpoints use ``include_txpool=False`` so a node
+        that does not implement txpool methods cannot hold an HTTP request.
+        Workers retain the default complete capacity inspection.
+        """
+        return self.chain.get_capacity(
+            max_page_size=max_page_size, include_txpool=include_txpool
+        )
 
     def is_connected(self):
         return self.chain.is_connected()
