@@ -100,7 +100,8 @@ class MetadataStorage(ABC):
         """Observe a bounded CID batch; subclasses may override efficiently."""
         return {cid: self.get_replication_status(cid) for cid in cids}
 
-    def ensure_replication(self, cids: list[str], target_replicas: int) -> dict[str, str]:
+    def ensure_replication(self, cids: list[str], target_replicas: int,
+                           assigned_replicas: dict[str, int] | None = None) -> dict[str, str]:
         """Request higher pin allocations when the backend supports it."""
         return {cid: "unsupported" for cid in cids}
 

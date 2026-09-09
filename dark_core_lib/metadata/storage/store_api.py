@@ -184,14 +184,16 @@ class StoreApiMetadataStorage(MetadataStorage):
         except (KeyError, TypeError, ValueError) as exc:
             raise StorageError(f"Store API returned invalid batch status response: {exc}") from exc
 
-    def ensure_replication(self, cids: list[str], target_replicas: int) -> dict[str, str]:
+    def ensure_replication(self, cids: list[str], target_replicas: int,
+                           assigned_replicas: dict[str, int] | None = None) -> dict[str, str]:
         unique_cids = list(dict.fromkeys(cid for cid in cids if cid))
         if not unique_cids:
             return {}
         try:
             response = self.client.post(
                 f"{self.base_url}/v1/replication/ensure",
-                json={"cids": unique_cids, "target_replicas": target_replicas},
+                json={"cids": unique_cids, "target_replicas": target_replicas,
+                      "assigned_replicas": assigned_replicas or {}},
             )
         except httpx.RequestError as exc:
             raise StorageError(f"Store API replication promotion failed: {exc}") from exc
