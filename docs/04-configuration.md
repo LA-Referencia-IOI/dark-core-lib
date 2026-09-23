@@ -25,6 +25,19 @@
 | `DARK_GAS_LIMIT` | `550000` | Limite de gas por transaccion de escritura; el minter usa el doble solo en rescue |
 | `DARK_TX_TIMEOUT_SECONDS` | `120` | Tiempo maximo esperando receipt |
 
+### ABI overrides
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `DARK_ABI_JSON` | unset | Optional JSON override for the bundled dARK ABI (`DARK_ABI` in `dark_core_lib/abi.py`) |
+| `AUTHORITY_ABI_JSON` | unset | Optional JSON override for the bundled Authority ABI (`AUTHORITY_ABI` in `dark_core_lib/abi.py`) |
+
+Semantics in `CoreConfig.from_env()` (`dark_core_lib/config.py`):
+
+- when the variable is set, its value is parsed with `json.loads` and used as the contract ABI
+- if the value is not valid JSON, the library silently falls back to the bundled ABI, so a bad override never breaks startup
+- when the variable is unset, the bundled ABI is used and the library works standalone
+
 ## Archivos recomendados
 
 - `.env.example`: plantilla base

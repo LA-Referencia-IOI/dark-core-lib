@@ -54,6 +54,8 @@ Wrappers:
 - `get_ark_by_id(ark)`
 - `ark_exists(naan, name)`
 - `ark_exists_by_id(ark)`
+- `get_ark_count()`
+- `get_recent_arks(limit=10)`
 
 Servicios equivalentes:
 
@@ -63,10 +65,14 @@ Servicios equivalentes:
 - `client.arks.resolve(...)`
 - `client.arks.get(...)`
 - `client.arks.exists(...)`
+- `client.arks.get_count()`
+- `client.arks.get_recent(limit, max_lookback_blocks=None)`
 
 `create_ark` and `update_ark` do not run `exists()` before the write. They return `ARKInfo` by default after confirmation. Pass `fetch_result=False` for write-only paths that should skip the post-write `get()` read and return `None`.
 
 `publish_ark_operations` is intended for services such as the minter worker. It receives semantic ARK create/update operations for one authority, pipelines individual signed transactions with sequential pending nonces, waits for receipts, and returns one semantic result per operation without exposing transaction hashes.
+
+`get_ark_count()` returns the total number of ARKs registered on-chain, read from the contract counter. `get_recent_arks(limit=10)` walks `ARKCreated` logs backwards from the chain tip in 512-block windows and returns up to `limit` ARK dictionaries with `pid`, `naan`, `name`, `owner`, `url`, and `cid`, newest first. The scan stops as soon as `limit` events are collected or 100,000 blocks have been scanned (the default lookback; override with `max_lookback_blocks` in the service call), and it short-circuits to an empty list when the on-chain count is zero.
 
 ## Metadata compartida
 
@@ -80,11 +86,22 @@ No todo en `dark-core-lib` son wrappers de blockchain. El paquete también expon
 - `Level1Metadata`
 - `OriginalMetadataRef`
 - `StoredDocument`
+- `ReplicationStatus`
 
 Uso típico:
 
 - el minter usa `MetadataService` para persistir L2, inyectar el CID interno en L1 y almacenar el L1 final
 - el resolver usa `MetadataService` para cargar L1 desde el CID on-chain y luego recuperar L2 para `?metadata`
+
+### Store API replication status
+
+`StoreApiMetadataStorage` exposes the replication observation methods used by the minter's replication worker; the `MetadataStorage` base class provides working defaults for backends without replication:
+
+- `get_replication_status(cid) -> ReplicationStatus` — live per-CID snapshot from Store API (`GET /v1/status/{cid}`); a 404 maps to `status="unpinned"` with `total_replicas=0`. The base-class default returns a synthetic single-copy `pinned` status.
+- `get_replication_statuses(cids) -> dict[str, ReplicationStatus]` — batch snapshot via `POST /v1/status/batch`; the CID list is deduplicated and the result is keyed by CID.
+- `ensure_replication(cids, target_replicas, assigned_replicas=None) -> dict[str, str]` — requests higher pin allocations via `POST /v1/replication/ensure` and returns one status string per CID; the base-class default returns `"unsupported"` per CID.
+
+`ReplicationStatus` carries `cid`, `status`, `total_replicas`, `queued_replicas`, `pinning_replicas`, `error_replicas`, `assigned_replicas`, and `checked_at`.
 
 ## Excepciones de uso frecuente
 
