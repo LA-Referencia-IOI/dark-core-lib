@@ -404,3 +404,46 @@ def test_get_recent_shrinks_window_on_rpc_error():
     # The 512-block window is rejected and halved to 256 rather than aborting.
     assert seen_spans[0] == 512
     assert seen_spans[1] == 256
+
+
+def test_owned_inventory_folds_transfers_in_log_order_at_one_block():
+    service, _ = _build_service()
+    service.w3.eth.block_number = 12
+    event = lambda index, **args: dict(blockNumber=10, logIndex=index, args=dict(naan='12345', name='test', **args))
+    service.contract.events = SimpleNamespace(
+        ARKCreated=Mock(return_value=SimpleNamespace(get_logs=Mock(return_value=[event(0, owner='0xaaa')]))),
+        ARKOwnershipTransferred=Mock(return_value=SimpleNamespace(get_logs=Mock(return_value=[event(2, new_owner='0xccc'), event(1, new_owner='0xbbb')]))),
+    )
+    count = Mock(); count.call.return_value = 1
+    get = Mock(); get.call.return_value = ('12345', 'test', 'url', 'cid', '0xccc', 1, 2)
+    service.contract.functions.get_owned_ark_count = Mock(return_value=count)
+    service.contract.functions.get_ark = Mock(return_value=get)
+    records, total = service.owned_records('0xCCC')
+    assert total == 1 and records[0]['owner'] == '0xccc'
+    count.call.assert_called_once_with(block_identifier=12)
+    get.call.assert_called_once_with(block_identifier=12)
+
+
+def test_owned_inventory_fails_closed_when_events_are_incomplete():
+    import pytest
+    from dark_core_lib.exceptions import ARKError
+    service, _ = _build_service()
+    service.w3.eth.block_number = 12
+    service.contract.events = SimpleNamespace(
+        ARKCreated=Mock(return_value=SimpleNamespace(get_logs=Mock(return_value=[]))),
+        ARKOwnershipTransferred=Mock(return_value=SimpleNamespace(get_logs=Mock(return_value=[]))),
+    )
+    count = Mock(); count.call.return_value = 1
+    service.contract.functions.get_owned_ark_count = Mock(return_value=count)
+    with pytest.raises(ARKError, match='incomplete'):
+        service.owned_records('0xaaa')
+
+
+def test_unavailable_owned_count_never_falls_back_to_zero():
+    import pytest
+    service, _ = _build_service()
+    service.w3.eth.block_number = 12
+    count = Mock(); count.call.side_effect = TimeoutError('RPC unavailable')
+    service.contract.functions.get_owned_ark_count = Mock(return_value=count)
+    with pytest.raises(TimeoutError):
+        service.owned_count('0xaaa')

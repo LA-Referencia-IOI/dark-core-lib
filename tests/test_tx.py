@@ -31,7 +31,8 @@ class DummyEth:
         self.gas_price = 7
         self.receipt = receipt or {"status": 1, "gasUsed": 21000, "blockNumber": 11}
 
-    def get_transaction_count(self, _address):
+    def get_transaction_count(self, _address, block_identifier):
+        assert block_identifier == "pending"
         return 3
 
     def send_raw_transaction(self, _raw):
@@ -108,3 +109,13 @@ def test_send_native_transfer_errors_when_no_raw_bytes_attr():
             amount_wei=123,
             timeout_seconds=120,
         )
+
+
+def test_contract_receipt_timeout_preserves_submitted_hash(monkeypatch):
+    w3 = DummyW3(DummySignedSnake())
+    def unavailable(*args, **kwargs):
+        raise TimeoutError('receipt unavailable')
+    monkeypatch.setattr(w3.eth, 'wait_for_transaction_receipt', unavailable)
+    with pytest.raises(TransactionError) as exc:
+        send_contract_tx(w3, DummyContractFunc(), DummyAccount(), 500000, 120)
+    assert exc.value.tx_hash == '0xabc123'

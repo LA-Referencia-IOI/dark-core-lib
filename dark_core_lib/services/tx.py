@@ -24,7 +24,7 @@ def send_contract_tx(w3, contract_func, account, gas_limit: int, timeout_seconds
         tx = contract_func.build_transaction(
             {
                 "from": account.address,
-                "nonce": w3.eth.get_transaction_count(account.address),
+                "nonce": w3.eth.get_transaction_count(account.address, 'pending'),
                 "gas": gas_limit,
                 "gasPrice": w3.eth.gas_price,
             }
@@ -32,9 +32,8 @@ def send_contract_tx(w3, contract_func, account, gas_limit: int, timeout_seconds
 
         signed = w3.eth.account.sign_transaction(tx, account.key)
         tx_hash = w3.eth.send_raw_transaction(_get_signed_raw_tx(signed))
-        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=timeout_seconds)
-
         tx_hash_hex = tx_hash.hex()
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=timeout_seconds)
         if receipt.get("status") == 0:
             raise TransactionError(
                 "Transaction reverted",
@@ -63,16 +62,15 @@ def send_native_transfer(w3, sender_account, to_address: str, amount_wei: int, t
             "from": sender_account.address,
             "to": to_address,
             "value": amount_wei,
-            "nonce": w3.eth.get_transaction_count(sender_account.address),
+            "nonce": w3.eth.get_transaction_count(sender_account.address, 'pending'),
             "gas": 21000,
             "gasPrice": w3.eth.gas_price,
         }
 
         signed = w3.eth.account.sign_transaction(tx, sender_account.key)
         tx_hash = w3.eth.send_raw_transaction(_get_signed_raw_tx(signed))
-        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=timeout_seconds)
-
         tx_hash_hex = tx_hash.hex()
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=timeout_seconds)
         if receipt.get("status") == 0:
             raise TransactionError(
                 "Transfer transaction reverted",

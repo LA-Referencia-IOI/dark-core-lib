@@ -64,6 +64,78 @@ class ARKService:
                 raise ARKNotFoundError(f"ARK not found: ark:/{naan}/{name}") from exc
             raise ARKError(f"Failed to get ARK: {exc}") from exc
 
+    def owned_count(self, wallet: str) -> int:
+        """New contracts maintain a counter; legacy contracts are checked by events.
+
+        Every creation is read at the same block. This fallback supports retirement
+        checks on existing immutable contracts without assuming local DB coverage.
+        """
+        block = self.w3.eth.block_number
+        try:
+            count_function = self.contract.functions.get_owned_ark_count(wallet)
+        except Exception:
+            count_function = None
+        if count_function is not None:
+            # Empty-return decoding is the only supported legacy fallback. RPC errors
+            # must propagate: an unavailable count is not a count of zero.
+            from web3.exceptions import BadFunctionCallOutput, ContractLogicError
+            try:
+                return int(count_function.call(block_identifier=block))
+            except BadFunctionCallOutput:
+                pass
+            except ContractLogicError as exc:
+                # Solidity contracts with no fallback revert unknown selectors
+                # with empty data. Do not swallow RPC failures or reasoned reverts.
+                if getattr(exc, "data", None) not in ("0x", b""):
+                    raise
+        count = 0
+        for start in range(0, block + 1, 2000):
+            logs = self.contract.events.ARKCreated().get_logs(from_block=start, to_block=min(start + 1999, block))
+            for event in logs:
+                args = event['args']
+                record = self.contract.functions.get_ark(args['naan'], args['name']).call(block_identifier=block)
+                if record[4].lower() == wallet.lower():
+                    count += 1
+        return count
+
+    def owned_records(self, wallet: str, offset: int = 0, limit: int = 50):
+        """Fold creation/transfer events at one block, then verify page owners.
+
+        This indexes blockchain records, never a Minter's lifecycle database.
+        Events from the immutable migration preserve original owner information.
+        """
+        block = self.w3.eth.block_number
+        owners = {}
+        for start in range(0, block + 1, 2000):
+            end = min(start + 1999, block)
+            events = list(self.contract.events.ARKCreated().get_logs(from_block=start, to_block=end))
+            events += list(self.contract.events.ARKOwnershipTransferred().get_logs(from_block=start, to_block=end))
+            for event in sorted(events, key=lambda e: (e['blockNumber'], e['logIndex'])):
+                args = event['args']
+                owners[(args['naan'], args['name'])] = args.get('new_owner', args.get('owner'))
+        identifiers = sorted(k for k, owner in owners.items() if owner.lower() == wallet.lower())
+        # The count getter is available on the ownership-enabled contract.
+        count = int(self.contract.functions.get_owned_ark_count(wallet).call(block_identifier=block))
+        if len(identifiers) != count:
+            raise ARKError('Blockchain ownership event inventory is incomplete')
+        records = []
+        for naan, name in identifiers[offset:offset+limit]:
+            value = self.contract.functions.get_ark(naan, name).call(block_identifier=block)
+            if value[4].lower() != wallet.lower():
+                raise ARKError('Blockchain ownership event inventory disagrees with registry')
+            records.append({'naan': naan, 'name': name, 'ark': f'ark:{naan}/{name}',
+                'owner': value[4], 'url': value[2], 'cid': value[3], 'transferable': True})
+        return records, count
+
+    def transfer_owner(self, naan: str, name: str, expected_owner: str, new_owner: str):
+        self._ensure_write_mode()
+        if self.authority_service.admin_account is None:
+            raise ReadOnlyModeError("Admin signer is required")
+        return send_contract_tx(self.w3,
+            self.contract.functions.transfer_ark_owner(naan, name, expected_owner, new_owner),
+            self.authority_service.admin_account, self.config.default_gas_limit,
+            self.config.tx_timeout_seconds)
+
     def create(
         self,
         uuid: str,

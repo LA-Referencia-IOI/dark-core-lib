@@ -75,8 +75,14 @@ class DARKCoreClient:
         return self.authorities
 
     # Backward-compatible convenience methods
-    def setup_authority(self, uuid: str, naans: list[str], fund_amount_wei: int = None):
-        return self._require_authorities().setup(uuid, naans, fund_amount_wei)
+    def setup_authority(self, uuid: str, naans: list[str], fund_amount_wei: int = None, client_public_key: bytes | None = None):
+        return self._require_authorities().setup(uuid, naans, fund_amount_wei, client_public_key)
+
+    def get_authority_auth(self, uuid: str):
+        return self._require_authorities().get_authority_auth(uuid)
+
+    def set_authority_client_key(self, uuid: str, public_key: bytes):
+        return self._require_authorities().set_authority_client_key(uuid, public_key)
 
     def get_authority_by_uuid(self, uuid: str):
         return self._require_authorities().get(uuid)
@@ -101,6 +107,16 @@ class DARKCoreClient:
 
     def fund_authority_wallet(self, uuid: str, amount_wei: int):
         return self._require_authorities().fund_wallet(uuid, amount_wei)
+
+    def get_owned_ark_count(self, uuid: str) -> int:
+        wallet = self.get_authority_by_uuid(uuid).wallet_address
+        return self.arks.owned_count(wallet)
+
+    def transfer_ark_owner(self, ark: str, source_uuid: str, target_uuid: str):
+        identifier = parse_ark_id(ark)
+        source = self.get_authority_by_uuid(source_uuid)
+        target = self.get_authority_by_uuid(target_uuid)
+        return self.arks.transfer_owner(identifier.naan, identifier.name, source.wallet_address, target.wallet_address)
 
     def create_ark(
         self,

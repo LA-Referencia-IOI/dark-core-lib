@@ -75,6 +75,25 @@ class AuthorityService:
         except AuthorityNotFoundError:
             return False
 
+    def get_authority_auth(self, uuid: str) -> tuple[bytes, bool]:
+        try:
+            key, active = self.contract.functions.get_authority_auth(uuid).call()
+            return bytes(key), bool(active)
+        except Exception as exc:
+            if "Authority not found" in str(exc):
+                raise AuthorityNotFoundError(f"Authority not found: {uuid}") from exc
+            raise AuthorityError("Authentication registry unavailable") from exc
+
+    def set_authority_client_key(self, uuid: str, public_key: bytes) -> TxReceiptInfo:
+        self._ensure_write_mode()
+        if len(public_key) != 32 or not any(public_key):
+            raise ValueError("Client public key must be 32 nonzero Ed25519 bytes")
+        return send_contract_tx(
+            self.w3, self.contract.functions.set_authority_client_key(uuid, public_key),
+            self.admin_account, gas_limit=self.config.default_gas_limit,
+            timeout_seconds=self.config.tx_timeout_seconds,
+        )
+
     def get_authority_key(self, uuid: str) -> str:
         """Get encrypted private key stored on-chain for an authority."""
         self._ensure_write_mode()
@@ -161,9 +180,11 @@ class AuthorityService:
             timeout_seconds=self.config.tx_timeout_seconds,
         )
 
-    def setup(self, uuid: str, naans: list[str], fund_amount_wei: int = None) -> AuthorityInfo:
+    def setup(self, uuid: str, naans: list[str], fund_amount_wei: int = None, client_public_key: bytes | None = None) -> AuthorityInfo:
         """Create wallet, fund it, register authority and authorize NAANs."""
         self._ensure_write_mode()
+        if client_public_key is not None and (len(client_public_key) != 32 or not any(client_public_key)):
+            raise ValueError("Client public key must be 32 nonzero Ed25519 bytes")
 
         try:
             existing = self.get(uuid)
@@ -191,7 +212,9 @@ class AuthorityService:
 
         send_contract_tx(
             self.w3,
-            self.contract.functions.register_authority(uuid, wallet_address, encrypted_key),
+            (self.contract.functions.register_authority(uuid, wallet_address, encrypted_key)
+             if client_public_key is None else
+             self.contract.functions.register_authority_with_client_key(uuid, wallet_address, encrypted_key, client_public_key)),
             self.admin_account,
             gas_limit=self.config.default_gas_limit,
             timeout_seconds=self.config.tx_timeout_seconds,
