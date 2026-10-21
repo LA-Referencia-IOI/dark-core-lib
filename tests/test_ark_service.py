@@ -371,9 +371,9 @@ def test_get_recent_stops_after_max_lookback_instead_of_walking_to_genesis():
     # ~10_000 / 512 fixed windows, not a walk back to genesis.
     assert get_logs.call_count == 20
     calls = [c.kwargs for c in get_logs.call_args_list]
-    assert calls[0]["toBlock"] == 1_000_000
+    assert calls[0]["to_block"] == 1_000_000
     # The scan halts exactly at the lookback floor, never below it.
-    assert min(c["fromBlock"] for c in calls) == 990_000
+    assert min(c["from_block"] for c in calls) == 990_000
 
 
 def test_get_recent_early_exits_and_returns_newest_first():
@@ -391,7 +391,7 @@ def test_get_recent_shrinks_window_on_rpc_error():
     seen_spans = []
 
     def flaky(**kwargs):
-        span = kwargs["toBlock"] - kwargs["fromBlock"] + 1
+        span = kwargs["to_block"] - kwargs["from_block"] + 1
         seen_spans.append(span)
         if span > 400:
             raise ValueError("Requested range exceeds maximum RPC range limit")

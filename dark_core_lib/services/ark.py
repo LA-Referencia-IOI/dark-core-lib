@@ -514,8 +514,8 @@ class ARKService:
                 current_from_block = max(oldest_block, current_to_block - span + 1)
                 try:
                     chunk_events = self.contract.events.ARKCreated.get_logs(
-                        fromBlock=current_from_block,
-                        toBlock=current_to_block,
+                        from_block=current_from_block,
+                        to_block=current_to_block,
                     )
                     break
                 except Exception as exc:
