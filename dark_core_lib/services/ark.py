@@ -38,7 +38,7 @@ class ARKService:
             return self.contract.functions.resolve(naan, name).call()
         except Exception as exc:
             if "ARK not found" in str(exc):
-                raise ARKNotFoundError(f"ARK not found: ark:/{naan}/{name}") from exc
+                raise ARKNotFoundError(f"ARK not found: ark:{naan}/{name}") from exc
             raise ARKError(f"Failed to resolve ARK: {exc}") from exc
 
     def exists(self, naan: str, name: str) -> bool:
@@ -61,7 +61,7 @@ class ARKService:
             )
         except Exception as exc:
             if "ARK not found" in str(exc):
-                raise ARKNotFoundError(f"ARK not found: ark:/{naan}/{name}") from exc
+                raise ARKNotFoundError(f"ARK not found: ark:{naan}/{name}") from exc
             raise ARKError(f"Failed to get ARK: {exc}") from exc
 
     def owned_count(self, wallet: str) -> int:
@@ -543,7 +543,7 @@ class ARKService:
         for event in recent_events:
             args = event.get("args", {})
             result.append({
-                "pid": f"ark:/{args.get('naan')}/{args.get('name')}",
+                "pid": f"ark:{args.get('naan')}/{args.get('name')}",
                 "naan": args.get("naan"),
                 "name": args.get("name"),
                 "owner": args.get("owner"),

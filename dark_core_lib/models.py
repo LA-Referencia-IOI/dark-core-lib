@@ -30,7 +30,7 @@ class ARKInfo:
     @property
     def ark_id(self) -> str:
         """Return fully qualified ARK identifier."""
-        return f"ark:/{self.naan}/{self.name}"
+        return f"ark:{self.naan}/{self.name}"
 
 
 @dataclass

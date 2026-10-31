@@ -384,7 +384,7 @@ def test_get_recent_early_exits_and_returns_newest_first():
 
     assert get_logs.call_count == 1
     assert [r["name"] for r in result] == ["a5", "a4", "a3"]
-    assert result[0]["pid"] == "ark:/12345/a5"
+    assert result[0]["pid"] == "ark:12345/a5"
 
 
 def test_get_recent_shrinks_window_on_rpc_error():

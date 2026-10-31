@@ -14,4 +14,4 @@ def test_ark_id_property():
         updated_at=datetime.now(timezone.utc),
     )
 
-    assert ark.ark_id == "ark:/12345/doc-001"
+    assert ark.ark_id == "ark:12345/doc-001"

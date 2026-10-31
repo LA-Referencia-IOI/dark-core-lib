@@ -14,8 +14,8 @@ class ARKIdentifier:
 
     @property
     def canonical(self) -> str:
-        """Return the canonical classic ARK representation."""
-        return f"ark:/{self.naan}/{self.name}"
+        """Return the canonical compact ARK representation."""
+        return self.compact
 
     @property
     def compact(self) -> str:
@@ -34,13 +34,15 @@ def parse_ark_id(raw: str) -> ARKIdentifier:
     if not candidate.startswith("ark:"):
         raise ARKError(f"Invalid ARK identifier: {raw}")
 
-    suffix = candidate[4:].lstrip("/")
+    suffix = candidate[4:]
+    if suffix.startswith("/"):
+        suffix = suffix[1:]
     parts = suffix.split("/", 1)
     if len(parts) != 2:
         raise ARKError(f"Invalid ARK identifier: {raw}")
 
     naan, name = parts[0].strip(), parts[1].strip()
-    if not naan or not name:
+    if not naan or not name or any(c.isspace() for c in naan + name):
         raise ARKError(f"Invalid ARK identifier: {raw}")
 
     return ARKIdentifier(naan=naan, name=name)

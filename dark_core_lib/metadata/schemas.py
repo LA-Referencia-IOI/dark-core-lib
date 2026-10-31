@@ -4,7 +4,9 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from dark_core_lib.ark_id import parse_ark_id
+from dark_core_lib.exceptions import ARKError
 
 
 class MetadataSchemaType(str, Enum):
@@ -47,6 +49,16 @@ class Level1Metadata(BaseModel):
     schema_uri: str = Field(default=LEVEL1_SCHEMA_URI, alias="$schema")
     schema_version: str = Field(default=LEVEL1_SCHEMA_VERSION)
     ark: Optional[str] = Field(None, description="Full ARK identifier")
+
+    @field_validator("ark")
+    @classmethod
+    def normalize_ark(cls, value):
+        if value is None:
+            return None
+        try:
+            return parse_ark_id(value).compact
+        except ARKError as exc:
+            raise ValueError(str(exc)) from exc
 
     title: str = Field(..., description="Resource title")
     authors: list[str] = Field(..., min_length=1, description="List of author names")
