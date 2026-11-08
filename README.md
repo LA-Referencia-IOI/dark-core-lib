@@ -1,5 +1,8 @@
 # dark-core-lib
 
+New platform developer: follow [developer onboarding](https://github.com/LA-Referencia-IOI/dark-deployer/blob/main/docs/developer-onboarding.md)
+for the complete local stack, signed requests and component iteration.
+
 Unified Python SDK to interact with dARK 2.0 on the blockchain.
 
 This package gathers into one API:
@@ -35,7 +38,7 @@ On-chain contracts:
 
 ```bash
 cd dark-core-lib
-python3 -m venv .venv
+python3.14 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
@@ -45,6 +48,11 @@ With development dependencies:
 ```bash
 pip install -e ".[dev]"
 ```
+
+Use Python 3.14 (`>=3.14,<3.15`). Install this library into each consuming
+component's isolated environment; do not combine several API packages named
+`app` in the deployer environment. Changes to bundled ABIs must match the deployed
+contracts and be checked with all affected API consumers.
 
 ## Configuration
 
