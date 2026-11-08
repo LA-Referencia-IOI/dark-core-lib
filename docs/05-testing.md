@@ -1,16 +1,16 @@
-# Testing e Integración E2E
+# Testing and E2E integration
 
-## Tipos de tests
+## Test types
 
-- Unitarios:
-  - Configuración
-  - Modelos
-- Integración:
-  - Conexión real a red
-  - Contratos desplegados
-  - Flujo completo autoridad + ARK
+- Unit:
+  - Configuration
+  - Models
+- Integration:
+  - Real network connection
+  - Deployed contracts
+  - Full authority + ARK flow
 
-## Comandos
+## Commands
 
 ### Unit tests
 
@@ -18,7 +18,7 @@
 python3 -m pytest -q
 ```
 
-### Solo integración
+### Integration only
 
 ```bash
 DARK_CORE_LIB_RUN_INTEGRATION=1 \
@@ -26,7 +26,7 @@ DARK_CORE_LIB_ENV_PATH=./.env.integration \
 python3 -m pytest -q -m integration tests/integration/test_e2e.py
 ```
 
-### Todo (unit + integración)
+### Everything (unit + integration)
 
 ```bash
 DARK_CORE_LIB_RUN_INTEGRATION=1 \
@@ -34,20 +34,20 @@ DARK_CORE_LIB_ENV_PATH=./.env.integration \
 python3 -m pytest -q
 ```
 
-## Lógica de seguridad en integración
+## Safety logic in integration tests
 
-Los tests E2E hacen `skip` si:
+The E2E tests `skip` if:
 
-- No se habilitan explícitamente (`DARK_CORE_LIB_RUN_INTEGRATION`).
-- Falta archivo de entorno.
-- No hay bytecode desplegado en direcciones de contrato configuradas.
-- No se puede inicializar cliente de lectura/escritura.
+- They are not explicitly enabled (`DARK_CORE_LIB_RUN_INTEGRATION`).
+- The environment file is missing.
+- There is no deployed bytecode at the configured contract addresses.
+- The read/write client cannot be initialized.
 
-Esto evita fallos falsos en máquinas sin stack local completo.
+This avoids false failures on machines without a complete local stack.
 
-## Estado validado
+## Validated state
 
-En el entorno local analizado:
+In the analyzed local environment:
 
 - Unit tests: OK
-- Integración E2E completa: OK con `.env.integration` correcto
+- Full E2E integration: OK with a correct `.env.integration`

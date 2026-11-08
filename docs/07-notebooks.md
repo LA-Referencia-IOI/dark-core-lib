@@ -1,21 +1,22 @@
 # Notebooks
 
-## Disponibles en este proyecto
+## Available in this project
 
 - `notebooks/dark_core_lib_e2e_demo.ipynb`
-  - Demo completo: alta de autoridad, creación/actualización/resolución de ARK.
+  - Full demo: authority setup, ARK creation/update/resolution.
 - `notebooks/dark_core_lib_read_only_demo.ipynb`
-  - Demo de solo lectura para consultas y resolución.
+  - Read-only demo for queries and resolution.
 
-## Recomendación de uso
+## Recommended use
 
-1. Ejecutar desde el directorio raíz de `dark-core-lib`.
-2. Tener disponible `../.env.integration` o `../.env`.
-3. Verificar antes que la red y contratos estén desplegados.
-4. For a complete HTTP flow across admin, minter, and resolver, use the end-to-end notebook in the dark-deployer repo: `notebooks/dark_e2e_authority_to_resolver.ipynb`.
+1. Run from the root directory of `dark-core-lib`.
+2. Have `../.env.integration` or `../.env` available.
+3. Check beforehand that the network and contracts are deployed.
+4. For a complete HTTP flow across Admin, Minter and Resolver, use the end-to-end
+   notebook in the dark-deployer repository (`notebooks/`).
 
-## Qué se adaptó
+## What was adapted
 
-- Imports y cliente a la API unificada.
-- Carga de entorno con prioridad a `.env.integration`.
-- Eliminación de referencias a API antigua.
+- Imports and client moved to the unified API.
+- Environment loading gives priority to `.env.integration`.
+- References to the old API were removed.

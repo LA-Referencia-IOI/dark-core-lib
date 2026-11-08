@@ -1,61 +1,67 @@
-# Arquitectura
+# Architecture
 
-## Mapa lógico
+## Logical map
 
 ```text
 DARKCoreClient
 ├── ChainService
 ├── ARKService
-├── AuthorityService
-└── MetadataService / storage helpers
+└── AuthorityService (when configured)
 
-Contratos:
-- Authority: registro de autoridad, NAANs, clave cifrada
+Separate library modules: MetadataService / storage helpers
+
+Contracts:
+- Authority: authority registry, NAANs, encrypted key
 - dARK: create/update/get/resolve ARKs
 ```
 
-## Flujo de inicialización
+## Initialization flow
 
-1. `CoreConfig.from_env(...)` carga y valida variables.
-2. Se crea conexión `Web3.HTTPProvider`.
-3. Se valida conexión y opcionalmente `chain_id`.
-4. Se construyen instancias de contrato:
-   - dARK (siempre)
-   - Authority (si está configurado)
-5. Se inicializan servicios y wrappers de cliente.
+1. `CoreConfig.from_env(...)` loads and validates variables.
+2. A `Web3.HTTPProvider` connection is created.
+3. The connection is checked and, optionally, the `chain_id`.
+4. Contract instances are built:
+   - dARK (always)
+   - Authority (if configured)
+5. Services and client wrappers are initialized.
 
-## Flujo de autoridad (write mode)
+## Authority flow (write mode)
 
-1. Verificar que UUID no exista.
-2. Crear wallet de autoridad.
-3. Cifrar private key con AES-256-GCM.
-4. Financiar wallet desde admin.
-5. Registrar autoridad en contrato.
-6. Autorizar NAANs.
-7. Devolver estado consolidado (`AuthorityInfo`).
+1. Verify that the UUID does not exist.
+2. Create the authority wallet.
+3. Encrypt the private key with AES-256-GCM.
+4. Fund the wallet from the admin account.
+5. Register the authority in the contract.
+6. Authorize the NAANs.
+7. Return the consolidated state (`AuthorityInfo`).
 
-## Flujo ARK
+## ARK flow
 
-- Lectura:
+- Read:
   - `exists`, `resolve`, `get`
-- Escritura:
-  - `create`: valida no existencia, firma con credenciales de autoridad
-  - `update`: valida existencia, firma con credenciales de autoridad
+- Write:
+  - `create` and `update` sign with the authority credentials and do **not** run a
+    pre-write `exists()` check: the contract is the source of truth for duplicate
+    or missing ARKs.
+  - `publish_operations` pipelines many signed transactions with sequential
+    pending nonces for one authority (see the
+    [platform architecture](https://github.com/LA-Referencia-IOI/dark-deployer/blob/main/docs/platform-architecture.md)).
 
-## Metadata compartida
+## Shared metadata
 
 - `dark_core_lib.metadata.schemas`
-  - define `Level1Metadata` y referencias a Level-2.
+  - defines `Level1Metadata` and the references to Level 2.
 - `dark_core_lib.metadata.storage`
-  - abstrae `filesystem` y `store_api`.
+  - abstracts the `filesystem` and `store_api` backends.
 - `dark_core_lib.metadata.service.MetadataService`
-  - encapsula el flujo compartido `L2 -> inject cid -> L1` y la carga `L1 -> L2`.
+  - encapsulates the shared flow `L2 -> inject cid -> L1` and the load path `L1 -> L2`.
 
-Esta capa no publica nada por HTTP; la usan `dark-core-minter-api` y `dark-core-resolver-api` para mantener el mismo contrato de metadata.
+This layer publishes nothing over HTTP; `dark-core-minter-api` and
+`dark-core-resolver-api` use it to keep the same metadata contract.
 
-## Decisiones relevantes
+## Relevant decisions
 
-- Wrappers en cliente para simplificar uso y compatibilidad.
-- Servicios separados para claridad y testabilidad.
-- `read_only` como guardia explícita para evitar escrituras accidentales.
-- Validación de bytecode/contratos en tests de integración para evitar falsos negativos.
+- Client wrappers simplify use and compatibility.
+- Separate services improve clarity and testability.
+- `read_only` is an explicit guard against accidental writes.
+- Bytecode/contract validation in integration tests avoids false negatives.

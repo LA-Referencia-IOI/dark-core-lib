@@ -1,37 +1,37 @@
 # dark-core-lib
 
-SDK Python unificado para interactuar con dARK 2.0 en blockchain.
+Unified Python SDK to interact with dARK 2.0 on the blockchain.
 
-Este paquete concentra en una sola API:
+This package gathers into one API:
 
-- Operaciones de lectura: resolver ARKs, consultar existencia y recuperar estado on-chain
-- Operaciones de escritura/administración: alta de autoridades, autorización de NAANs, creación y actualización de ARKs
-- Modelos y utilidades compartidas de metadata: esquemas L1/L2, backends de storage y `MetadataService`
+- Read operations: resolve ARKs, check existence and retrieve on-chain state
+- Write/administration operations: register authorities, authorize NAANs, create and update ARKs
+- Shared metadata models and utilities: L1/L2 schemas, storage backends and `MetadataService`
 
-## Resumen
+## Summary
 
-`dark-core-lib` ofrece una capa de alto nivel sobre contratos inteligentes para trabajar con identificadores persistentes ARK.
+`dark-core-lib` offers a high-level layer over the smart contracts to work with ARK persistent identifiers.
 
-Soporta dos modos de operación:
+It supports two modes of operation:
 
-- `read_only=True`: solo consultas (no requiere clave de admin)
-- `read_only=False`: consultas + transacciones firmadas (requiere configuración de autoridad y clave de admin)
+- `read_only=True`: queries only (no admin key required)
+- `read_only=False`: queries + signed transactions (requires the authority configuration and the admin key)
 
-## Arquitectura
+## Architecture
 
 ```text
 DARKCoreClient
-├── Chain service       (conectividad y estado de red)
+├── Chain service       (connectivity and network state)
 ├── ARK service         (resolve, exists, get, create, update)
-├── Authority service   (setup, autorización NAAN, consulta de autoridades)
+├── Authority service   (setup, NAAN authorization, authority queries)
 └── Metadata helpers    (schemas, storage, MetadataService)
 
-Contratos on-chain:
-- Contrato de autoridades (registro, NAANs, claves cifradas)
-- Contrato dARK (almacenamiento y resolución de ARKs)
+On-chain contracts:
+- Authority contract (registry, NAANs, encrypted keys)
+- dARK contract (ARK storage and resolution)
 ```
 
-## Instalación
+## Installation
 
 ```bash
 cd dark-core-lib
@@ -40,32 +40,32 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-Con dependencias de desarrollo:
+With development dependencies:
 
 ```bash
 pip install -e ".[dev]"
 ```
 
-## Configuración
+## Configuration
 
-Puedes partir de `.env.example` o usar `.env.integration` para pruebas E2E.
+Start from `.env.example`, or use `.env.integration` for E2E tests.
 
-### Variables requeridas en todos los modos
+### Variables required in every mode
 
 - `DARK_RPC_URL`
 - `DARK_CONTRACT_ADDRESS`
 
-### Recomendadas
+### Recommended
 
 - `DARK_CHAIN_ID`
 - `DARK_VALIDATE_CHAIN_ID` (`True`/`False`)
 
-### Requeridas solo para modo escritura
+### Required only in write mode
 
 - `DARK_AUTHORITY_ADDRESS`
 - `DARK_ADMIN_PRIVATE_KEY`
 
-### Opcionales
+### Optional
 
 - `DARK_READ_ONLY`
 - `DARK_GAS_LIMIT`
@@ -78,7 +78,7 @@ Puedes partir de `.env.example` o usar `.env.integration` para pruebas E2E.
 
 Optional JSON overrides for the bundled contract ABIs. When set, `CoreConfig.from_env()` parses the value with `json.loads` and uses it as the ABI for the dARK contract (`DARK_ABI_JSON`) or the Authority contract (`AUTHORITY_ABI_JSON`); if the value is not valid JSON, the library silently falls back to the bundled `DARK_ABI` / `AUTHORITY_ABI` constants in `dark_core_lib/abi.py`. When unset, the bundled ABIs are used so the library works standalone.
 
-Ejemplo:
+Example:
 
 ```env
 DARK_RPC_URL=http://localhost:8545
@@ -92,9 +92,9 @@ DARK_GAS_LIMIT=550000
 DARK_TX_TIMEOUT_SECONDS=120
 ```
 
-## Inicio rápido
+## Quick start
 
-### Modo lectura
+### Read mode
 
 ```python
 from dark_core_lib import DARKCoreClient
@@ -111,7 +111,7 @@ if exists:
     print(url, info.cid)
 ```
 
-### Metadata compartida
+### Shared metadata
 
 ```python
 from dark_core_lib import MetadataService, get_metadata_storage
@@ -129,7 +129,7 @@ print(level1.title)
 print(level2.content_type)
 ```
 
-### Modo escritura
+### Write mode
 
 ```python
 from dark_core_lib import DARKCoreClient
@@ -161,9 +161,9 @@ print(updated.url)
 
 `create_ark()` and `update_ark()` are write calls. They submit the transaction, wait for confirmation, and return `ARKInfo` by default. They do not perform an automatic `exists()` read before the write. Worker-style callers that do not need the post-write read can pass `fetch_result=False`.
 
-## API pública
+## Public API
 
-### Cliente principal
+### Main client
 
 - `DARKCoreClient.from_env(env_path=None, read_only=None)`
 - `is_connected()`
@@ -171,9 +171,9 @@ print(updated.url)
 - `get_chain_capacity(max_page_size=20)`
 - `get_admin_balance()`
 
-### Autoridades
+### Authorities
 
-Vía wrappers del cliente:
+Through client wrappers:
 
 - `setup_authority(uuid, naans, fund_amount_wei=None)`
 - `get_authority_by_uuid(uuid)`
@@ -182,7 +182,7 @@ Vía wrappers del cliente:
 - `is_authorized_for_naan(uuid, naan)`
 - `get_wallet_balance(uuid)`
 
-Vía servicios:
+Through services:
 
 - `client.authorities.setup(...)`
 - `client.authorities.get(...)`
@@ -191,7 +191,7 @@ Vía servicios:
 
 ### ARKs
 
-Vía wrappers del cliente:
+Through client wrappers:
 
 - `create_ark(uuid, naan, name, url, cid, fetch_result=True)`
 - `update_ark(uuid, naan, name, url, cid, fetch_result=True)`
@@ -207,7 +207,7 @@ Vía wrappers del cliente:
 - `get_ark_count()`
 - `get_recent_arks(limit=10)`
 
-Vía servicios:
+Through services:
 
 - `client.arks.create(...)`
 - `client.arks.update(...)`
@@ -230,7 +230,7 @@ Vía servicios:
 
 `get_chain_capacity` returns a semantic `ChainCapacityInfo` snapshot for worker pacing. It reads block progress and, when available, Besu txpool statistics through the core-lib web3 client, then recommends a temporary page size without exposing raw RPC details to callers.
 
-### Metadata compartida
+### Shared metadata
 
 - `parse_ark_id(raw)`
 - `MetadataService(storage)`
@@ -252,7 +252,7 @@ Vía servicios:
 
 `ReplicationStatus` carries `cid`, `status`, `total_replicas`, `queued_replicas`, `pinning_replicas`, `error_replicas`, `assigned_replicas`, and `checked_at`.
 
-## Modelos
+## Models
 
 - `AuthorityInfo`
   - `uuid`, `wallet_address`, `naans`, `active`
@@ -261,17 +261,17 @@ Vía servicios:
 - `TxReceiptInfo`
   - `tx_hash`, `status`, `gas_used`, `block_number`
 - `Level1Metadata`
-  - payload público mínimo que publica el minter y consume el resolver en `?info`
+  - minimal public payload published by the Minter and consumed by the Resolver in `?info`
 - `OriginalMetadataRef`
-  - referencia interna a L2 con `schema`, `media_type` y `cid`
+  - internal reference to L2 with `schema`, `media_type` and `cid`
 - `StoredDocument`
   - `content`, `content_type`, `schema`
 - `ReplicationStatus`
   - `cid`, `status`, `total_replicas`, `queued_replicas`, `pinning_replicas`, `error_replicas`, `assigned_replicas`, `checked_at`
 
-## Manejo de errores
+## Error handling
 
-Excepciones principales:
+Main exceptions:
 
 - `DarkCoreError`
 - `ConfigurationError`
@@ -281,21 +281,21 @@ Excepciones principales:
 - `AuthorityError`, `AuthorityNotFoundError`, `AuthorityAlreadyExistsError`, `AuthorizationError`
 - `ARKError`, `ARKNotFoundError`, `ARKAlreadyExistsError`
 
-## Seguridad
+## Security
 
-Para operaciones de autoridad, las claves privadas de wallets de autoridades se cifran con AES-256-GCM antes de almacenarse on-chain.
+For authority operations, the private keys of authority wallets are encrypted with AES-256-GCM before being stored on-chain.
 
-Recomendaciones:
+Recommendations:
 
-- Usa esta librería en redes privadas/permissionadas
-- No expongas `DARK_ADMIN_PRIVATE_KEY`
-- Evita logs con secretos
+- Use this library on private/permissioned networks
+- Do not expose `DARK_ADMIN_PRIVATE_KEY`
+- Avoid logs that contain secrets
 
 ## Notebooks
 
-- End-to-end (alta autoridad + create/update/resolve ARK):
+- End to end (authority setup + create/update/resolve ARK):
   - `notebooks/dark_core_lib_e2e_demo.ipynb`
-- Solo lectura (consulta y resolución):
+- Read only (queries and resolution):
   - `notebooks/dark_core_lib_read_only_demo.ipynb`
 
 ## Testing
@@ -306,7 +306,7 @@ Recomendaciones:
 python3 -m pytest -q
 ```
 
-### Integración E2E
+### E2E integration
 
 ```bash
 DARK_CORE_LIB_RUN_INTEGRATION=1 \
@@ -314,7 +314,7 @@ DARK_CORE_LIB_ENV_PATH=./.env.integration \
 python3 -m pytest -q -m integration tests/integration/test_e2e.py
 ```
 
-## Estructura del proyecto
+## Project structure
 
 ```text
 dark-core-lib/
@@ -342,12 +342,12 @@ dark-core-lib/
 └── README.md
 ```
 
-## Licencia
+## License
 
-AGPL-3.0-only. Ver `LICENSE` para detalles.
+AGPL-3.0-only. See `LICENSE` for details.
 
-## Documentación extendida
+## Extended documentation
 
-Ver documentación técnica completa en `docs/`:
+See the complete technical documentation in `docs/`:
 
-- Índice: `docs/README.md`
+- Index: `docs/README.md`

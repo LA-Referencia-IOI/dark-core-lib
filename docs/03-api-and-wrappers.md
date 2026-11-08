@@ -1,28 +1,28 @@
-# API y Wrappers
+# API and wrappers
 
-## Cliente principal
+## Main client
 
 - `DARKCoreClient.from_env(env_path=None, read_only=None)`
 - `is_connected()`
 - `get_block_number()`
 - `get_admin_balance()`
 
-## Qué son los wrappers
+## What the wrappers are
 
-Los wrappers son atajos en `DARKCoreClient` que delegan a servicios internos.
+Wrappers are shortcuts on `DARKCoreClient` that delegate to the internal services.
 
-Ejemplos:
+Examples:
 
 - `client.setup_authority(...)` -> `client.authorities.setup(...)`
 - `client.resolve_ark(...)` -> `client.arks.resolve(...)`
 
-Ventajas:
+Advantages:
 
-- API rápida para uso común.
-- Menor curva de aprendizaje.
-- Migración más suave desde código previo.
+- A fast API for common use.
+- A shorter learning curve.
+- A smoother migration from earlier code.
 
-## Autoridades
+## Authorities
 
 Wrappers:
 
@@ -33,7 +33,7 @@ Wrappers:
 - `is_authorized_for_naan(uuid, naan)`
 - `get_wallet_balance(uuid)`
 
-Servicios equivalentes:
+Equivalent services:
 
 - `client.authorities.setup(...)`
 - `client.authorities.get(...)`
@@ -57,7 +57,7 @@ Wrappers:
 - `get_ark_count()`
 - `get_recent_arks(limit=10)`
 
-Servicios equivalentes:
+Equivalent services:
 
 - `client.arks.create(...)`
 - `client.arks.update(...)`
@@ -74,9 +74,9 @@ Servicios equivalentes:
 
 `get_ark_count()` returns the total number of ARKs registered on-chain, read from the contract counter. `get_recent_arks(limit=10)` walks `ARKCreated` logs backwards from the chain tip in 512-block windows and returns up to `limit` ARK dictionaries with `pid`, `naan`, `name`, `owner`, `url`, and `cid`, newest first. The scan stops as soon as `limit` events are collected or 100,000 blocks have been scanned (the default lookback; override with `max_lookback_blocks` in the service call), and it short-circuits to an empty list when the on-chain count is zero.
 
-## Metadata compartida
+## Shared metadata
 
-No todo en `dark-core-lib` son wrappers de blockchain. El paquete también expone piezas compartidas para los servicios HTTP:
+Not everything in `dark-core-lib` is a blockchain wrapper. The package also exposes shared pieces for the HTTP services:
 
 - `parse_ark_id(raw)`
 - `MetadataService(storage)`
@@ -88,10 +88,10 @@ No todo en `dark-core-lib` son wrappers de blockchain. El paquete también expon
 - `StoredDocument`
 - `ReplicationStatus`
 
-Uso típico:
+Typical use:
 
-- el minter usa `MetadataService` para persistir L2, inyectar el CID interno en L1 y almacenar el L1 final
-- el resolver usa `MetadataService` para cargar L1 desde el CID on-chain y luego recuperar L2 para `?metadata`
+- the Minter uses `MetadataService` to persist L2, inject the internal CID into L1 and store the final L1
+- the Resolver uses `MetadataService` to load L1 from the on-chain CID and then retrieve L2 for `?metadata`
 
 ### Store API replication status
 
@@ -103,10 +103,10 @@ Uso típico:
 
 `ReplicationStatus` carries `cid`, `status`, `total_replicas`, `queued_replicas`, `pinning_replicas`, `error_replicas`, `assigned_replicas`, and `checked_at`.
 
-## Excepciones de uso frecuente
+## Frequently used exceptions
 
-- `ReadOnlyModeError`: intento de escritura en modo lectura.
-- `ConfigurationError`: configuración faltante/inválida.
-- `ConnectionError`: problema de red o mismatch de `chain_id`.
-- `Authority*` y `ARK*`: errores de dominio de contratos.
-- `TransactionError`: transacción revertida o fallida.
+- `ReadOnlyModeError`: a write was attempted in read mode.
+- `ConfigurationError`: missing or invalid configuration.
+- `ConnectionError`: network problem or `chain_id` mismatch.
+- `Authority*` and `ARK*`: contract domain errors.
+- `TransactionError`: a reverted or failed transaction.

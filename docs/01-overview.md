@@ -1,32 +1,35 @@
-# Visión General
+# Overview
 
-`dark-core-lib` es un SDK Python unificado para dARK 2.0 que combina:
+`dark-core-lib` is a unified Python SDK for dARK 2.0. It combines:
 
-- Operaciones de lectura de ARKs.
-- Operaciones de escritura y administración de autoridades.
+- read operations on ARKs;
+- write and administration operations for authorities and ARKs;
+- shared metadata models and storage helpers used by the HTTP services.
 
-## Objetivo
+## Goal
 
-Tener una sola librería, en un directorio separado, sin depender en runtime de librerías previas separadas para lectura/escritura.
+One library, in its own directory, with no runtime dependency on the earlier
+separate read/write libraries.
 
-## Modos de operación
+## Modes
 
 - `read_only=True`
-  - Solo consultas.
-  - No requiere clave administrativa.
+  - Queries only.
+  - No administrative key required.
 - `read_only=False`
-  - Consultas + transacciones firmadas.
-  - Requiere contrato de autoridad y clave administrativa.
+  - Queries plus signed transactions.
+  - Requires the Authority contract address and the administrative key.
 
-## Componentes principales
+## Main components
 
-- Cliente principal: `DARKCoreClient`
-- Servicios:
+- Main client: `DARKCoreClient`
+- Services:
   - `AuthorityService`
   - `ARKService`
   - `ChainService`
-- Soporte:
-  - Configuración (`CoreConfig`)
-  - Modelos (`AuthorityInfo`, `ARKInfo`, `TxReceiptInfo`)
-  - Cifrado AES-GCM de claves de autoridad
-  - ABIs embebidas de contratos
+- Support:
+  - Configuration (`CoreConfig`)
+  - Models (`AuthorityInfo`, `ARKInfo`, `TxReceiptInfo`)
+  - AES-GCM encryption of authority keys
+  - Embedded contract ABIs
+  - Shared metadata (`Level1Metadata`, `MetadataService`, storage backends)

@@ -1,37 +1,37 @@
-# Notas Operativas
+# Operational notes
 
-## Checklist para entorno local sano
+## Checklist for a healthy local environment
 
-1. RPC accesible en `DARK_RPC_URL`.
-2. `DARK_CHAIN_ID` alineado con la cadena activa.
-3. Bytecode presente en:
+1. RPC reachable at `DARK_RPC_URL`.
+2. `DARK_CHAIN_ID` aligned with the active chain.
+3. Bytecode present at:
    - `DARK_CONTRACT_ADDRESS`
-   - `DARK_AUTHORITY_ADDRESS` (si write mode)
-4. Clave admin válida para el contrato de autoridad.
+   - `DARK_AUTHORITY_ADDRESS` (write mode)
+4. A valid admin key for the Authority contract.
 
-## Verificaciones rápidas útiles
+## Useful quick checks
 
-- Conectividad:
+- Connectivity:
   - `client.is_connected()`
-- Cadena:
+- Chain:
   - `client.get_block_number()`
-- Balance admin (write mode):
+- Admin balance (write mode):
   - `client.get_admin_balance()`
 
-## Síntomas y diagnóstico
+## Symptoms and diagnosis
 
-- Error de cadena:
+- Chain error:
   - `Chain ID mismatch`
-  - Acción: revisar `DARK_CHAIN_ID` o desactivar validación temporalmente.
-- Error de contrato:
+  - Action: check `DARK_CHAIN_ID` or temporarily disable validation.
+- Contract error:
   - `Could not transact with/call contract function`
-  - Acción: revisar direcciones y despliegue.
-- Error en modo:
+  - Action: check addresses and deployment.
+- Mode error:
   - `ReadOnlyModeError`
-  - Acción: inicializar cliente con `read_only=False`.
+  - Action: initialize the client with `read_only=False`.
 
-## Recomendaciones de operación
+## Operating recommendations
 
-1. Mantener `.env.integration` sincronizado con último despliegue.
-2. Evitar hardcodear direcciones en código.
-3. Ejecutar integración E2E antes de cambios de ABI o configuración.
+1. Keep `.env.integration` in sync with the latest deployment.
+2. Avoid hardcoding addresses in code.
+3. Run the E2E integration before changing the ABI or configuration.

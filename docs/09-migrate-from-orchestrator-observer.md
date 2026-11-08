@@ -1,54 +1,54 @@
-# Migración desde Orchestrator y Observer a dark-core-lib
+# Migrating from Orchestrator and Observer to dark-core-lib
 
-Este documento describe una migración práctica desde el esquema de dos librerías separadas (una para escritura/admin y otra para lectura) hacia `dark-core-lib`.
+This document describes a practical migration from the two-library scheme (one for write/admin and one for read) to `dark-core-lib`.
 
-## Objetivo
+## Goal
 
-- Unificar imports y cliente.
-- Mantener compatibilidad funcional.
-- Reducir riesgo con migración incremental.
+- Unify imports and client.
+- Keep functional compatibility.
+- Reduce risk with an incremental migration.
 
-## 1. Cambio de imports
+## 1. Import change
 
-Antes:
+Before:
 
 ```python
 from dark_orchestrator import DARKOrchestrator
 from dark_observer import DARKObserver
 ```
 
-Después:
+After:
 
 ```python
 from dark_core_lib import DARKCoreClient
 ```
 
-## 2. Inicialización
+## 2. Initialization
 
-Antes:
+Before:
 
 ```python
 orchestrator = DARKOrchestrator()
 observer = DARKObserver()
 ```
 
-Después (dos opciones):
+After (two options):
 
 ```python
-# Cliente único con escritura + lectura
+# Single client with write + read
 client = DARKCoreClient.from_env(read_only=False)
 ```
 
 ```python
-# Cliente sólo lectura (equivalente a observer)
+# Read-only client (equivalent to observer)
 ro_client = DARKCoreClient.from_env(read_only=True)
 ```
 
-## 3. Equivalencias de API
+## 3. API equivalences
 
-### Operaciones de autoridad
+### Authority operations
 
-| Antes | Después (wrapper) | Después (servicio) |
+| Before | After (wrapper) | After (service) |
 |---|---|---|
 | `orchestrator.setup_authority(uuid, naans)` | `client.setup_authority(uuid, naans)` | `client.authorities.setup(uuid, naans)` |
 | `orchestrator.get_authority_by_uuid(uuid)` | `client.get_authority_by_uuid(uuid)` | `client.authorities.get(uuid)` |
@@ -57,9 +57,9 @@ ro_client = DARKCoreClient.from_env(read_only=True)
 | `orchestrator.is_authorized_for_naan(uuid, naan)` | `client.is_authorized_for_naan(uuid, naan)` | `client.authorities.is_authorized_for_naan(uuid, naan)` |
 | `orchestrator.get_wallet_balance(uuid)` | `client.get_wallet_balance(uuid)` | `client.authorities.get_wallet_balance(uuid)` |
 
-### Operaciones ARK
+### ARK operations
 
-| Antes | Después (wrapper) | Después (servicio) |
+| Before | After (wrapper) | After (service) |
 |---|---|---|
 | `orchestrator.create_ark(...)` | `client.create_ark(...)` | `client.arks.create(...)` |
 | `orchestrator.update_ark(...)` | `client.update_ark(...)` | `client.arks.update(...)` |
@@ -70,9 +70,9 @@ ro_client = DARKCoreClient.from_env(read_only=True)
 | `observer.get_ark(naan, name)` | `ro_client.get_ark(naan, name)` | `ro_client.arks.get(naan, name)` |
 | `observer.ark_exists(naan, name)` | `ro_client.ark_exists(naan, name)` | `ro_client.arks.exists(naan, name)` |
 
-### Utilidades
+### Utilities
 
-| Antes | Después |
+| Before | After |
 |---|---|
 | `orchestrator.get_block_number()` | `client.get_block_number()` |
 | `observer.get_block_number()` | `ro_client.get_block_number()` |
@@ -80,40 +80,40 @@ ro_client = DARKCoreClient.from_env(read_only=True)
 | `observer.is_connected()` | `ro_client.is_connected()` |
 | `orchestrator.get_admin_balance()` | `client.get_admin_balance()` |
 
-## 4. Configuración
+## 4. Configuration
 
-### Variables mínimas lectura
+### Minimum read variables
 
 - `DARK_RPC_URL`
 - `DARK_CONTRACT_ADDRESS`
 
-### Variables adicionales escritura
+### Additional write variables
 
 - `DARK_AUTHORITY_ADDRESS`
 - `DARK_ADMIN_PRIVATE_KEY`
 
-### Recomendado
+### Recommended
 
 - `DARK_CHAIN_ID`
 - `DARK_VALIDATE_CHAIN_ID=True`
 
-## 5. Plan de migración por fases
+## 5. Phased migration plan
 
-1. **Fase 1 - Import único**
-   - Sustituir imports por `DARKCoreClient`.
-2. **Fase 2 - Modo dual controlado**
-   - Lectura con `read_only=True`.
-   - Escritura con `read_only=False`.
-3. **Fase 3 - Wrappers primero**
-   - Migrar llamadas usando wrappers para cambiar lo mínimo.
-4. **Fase 4 - Servicios internos**
-   - Refactor gradual a `client.authorities` y `client.arks` en módulos nuevos.
-5. **Fase 5 - End-to-end**
-   - Ejecutar tests unitarios + integración antes de retirar código antiguo.
+1. **Phase 1 - Single import**
+   - Replace imports with `DARKCoreClient`.
+2. **Phase 2 - Controlled dual mode**
+   - Reads with `read_only=True`.
+   - Writes with `read_only=False`.
+3. **Phase 3 - Wrappers first**
+   - Migrate calls using wrappers to change as little as possible.
+4. **Phase 4 - Internal services**
+   - Gradually refactor to `client.authorities` and `client.arks` in new modules.
+5. **Phase 5 - End to end**
+   - Run unit + integration tests before removing the old code.
 
-## 6. Ejemplo completo (antes/después)
+## 6. Complete example (before/after)
 
-Antes:
+Before:
 
 ```python
 from dark_orchestrator import DARKOrchestrator
@@ -127,7 +127,7 @@ ark = orchestrator.create_ark("org-1", "12345", "doc-1", "https://x", "Qm...")
 url = observer.resolve("12345", "doc-1")
 ```
 
-Después:
+After:
 
 ```python
 from dark_core_lib import DARKCoreClient
@@ -144,16 +144,16 @@ url = ro_client.resolve_ark("12345", "doc-1")
 
 For worker pipelines, use `client.publish_ark_operations(...)` with operations for one authority UUID. It sends individual create/update transactions with sequential pending nonces and returns semantic per-ARK results without exposing transaction hashes.
 
-## 7. Riesgos y mitigaciones
+## 7. Risks and mitigations
 
 - `Chain ID mismatch`:
-  - Alinear `DARK_CHAIN_ID` con la red activa.
-- Contratos sin bytecode:
-  - Verificar direcciones desplegadas antes de correr integración.
-- Escritura en modo lectura:
-  - Usar cliente `read_only=False` para transacciones.
+  - Align `DARK_CHAIN_ID` with the active network.
+- Contracts without bytecode:
+  - Check the deployed addresses before running integration.
+- Writing in read mode:
+  - Use a `read_only=False` client for transactions.
 
-## 8. Validación post-migración
+## 8. Post-migration validation
 
 ```bash
 python3 -m pytest -q
